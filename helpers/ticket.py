@@ -1,10 +1,10 @@
-import os, sys, re
+import os, sys, re, glob
 
-import util
+from helpers import util
 
 
 class Ticket:
-    def __int__(self, uid):
+    def __init__(self, uid):
         self.uid = uid
         self.title = None
         self.category = None
@@ -21,13 +21,20 @@ class Subitem:
         self.name = name
 
 
+# Parse all tickets
+def all_tickets( dir ):
+    for file in glob.glob(f'{dir}/**/meta.md', recursive=True):
+        dirs = re.split('/', file)
+        with open(file) as handle:
+            parse( handle, dirs[-2].lower())
+
 # Pass in an open filehandle and we'll generate a ticket
 def parse( handle, uid ):
     ticket = Ticket( uid )
 
     # Load up the files and go!
     for line in handle.readlines():
-        line = line.chomp()
+        line = line.rstrip()
 
         # Store the title!
         if ticket.title is None and (ret := re.search(r'^# (.*$)', line)) is not None:
@@ -35,15 +42,20 @@ def parse( handle, uid ):
             print(ticket.title)
 
         # Setup the sub topics
-        if (ret := re.search(r'^[ ]*([0-9]+[.].*)', line)):
+        if (ret := re.search(r'^\w*[0-9]+[.][\t ]*(.*)$', line)):
             clean = ret.group(1)
-            active = re.search(r'^~~', clean) and re.search(r'~~$', clean)
-            si = Subitem( active, re.sub( r'~~$', '', re.sub(r'^~~', '', clean )))
-            ticket.subitems.append( active, si )
+            active = not re.search(r'^~~', clean) or not re.search(r'~~$', clean)
+            si = Subitem( active, re.sub( '~~$', '', re.sub('^~~', '', clean )))
+            ticket.subitems.append( si )
+            print(f'Adding subtask: {si.name} {"True" if si.active else "False"}')
 
         # Find an account modifier
         elif re.search(r'^>', line):
-            for mod in re.split(r'[ ]+'):
+            for mod in re.split(' ', line):
+                if len(mod) <= 1:
+                    continue
+
+                print(f'    {mod}')
                 if mod[0] == '^':
                     ticket.category = mod[1:]
                 elif mod[0] == '!':
