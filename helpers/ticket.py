@@ -23,10 +23,17 @@ class Subitem:
 
 # Parse all tickets
 def all_tickets( dir ):
+    tickets = []
+
+    # Read in all the tickets
     for file in glob.glob(f'{dir}/**/meta.md', recursive=True):
         dirs = re.split('/', file)
         with open(file) as handle:
-            parse( handle, dirs[-2].lower())
+            if (ticket := parse( handle, dirs[-2].lower())) is not None:
+                tickets.append( ticket )
+
+    return tickets
+
 
 # Pass in an open filehandle and we'll generate a ticket
 def parse( handle, uid ):
