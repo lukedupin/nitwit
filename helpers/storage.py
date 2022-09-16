@@ -1,8 +1,9 @@
 import os, sys, re, glob
+
+from pathlib import Path
 from datetime import datetime
 
 from helpers import util
-
 
 class Ticket:
     def __init__(self, uid):
@@ -43,14 +44,17 @@ class Subitem:
     def __init__(self, clean):
         self.active = not re.search(r'^~~', clean) or not re.search(r'~~$', clean)
         self.name = re.sub('~~$', '', re.sub('^~~', '', clean))
+        self.notes = []
 
+
+### Bulk commands for parsing and writing to the filesystem
 
 # Parse all tickets
-def all_tickets( dir, filter_uids=None ):
+def import_tickets( base_dir, filter_uids=None ):
     tickets = []
 
     # Read in all the tickets
-    for file in glob.glob(f'{dir}_tickets/**/meta.md', recursive=True):
+    for file in glob.glob(f'{base_dir}_tickets/**/meta.md', recursive=True):
         uid = re.split('/', file)[-2].lower()
         with open(file) as handle:
             if filter_uids is not None and uid not in filter_uids:
@@ -62,12 +66,22 @@ def all_tickets( dir, filter_uids=None ):
     return tickets
 
 
+# Export all tickets
+def export_tickets( base_dir, tickets ):
+    for ticket in tickets:
+        dir = f"{base_dir}/{ticket.uid}"
+        Path(dir).mkdir(parents=True, exist_ok=True)
+
+        with open(f"{dir}/meta.md", 'w') as handle:
+            export_ticket( handle, ticket )
+
+
 # Parse all sprints
-def all_sprints( dir, filter_owners=None ):
+def import_sprints( base_dir, filter_owners=None ):
     sprints = []
 
     # Read in all the sprints
-    for file in glob.glob(f'{dir}_sprints/**/meta.md', recursive=True):
+    for file in glob.glob(f'{base_dir}_sprints/**/meta.md', recursive=True):
         owner = re.split('/', file)[-2].lower()
         with open(file) as handle:
             if filter_owners is not None and owner not in filter_owners:
@@ -80,14 +94,14 @@ def all_sprints( dir, filter_owners=None ):
 
 
 # Parse all sprints
-def latest_sprints( dir, filter_owners=None ):
+def import_latest_sprints( base_dir, filter_owners=None ):
     sprints = []
 
     latest_dir = None
     latest_unix = None
 
     # Read in all the sprints
-    for file in glob.glob(f'{dir}_sprints/**/**.md', recursive=True):
+    for file in glob.glob(f'{base_dir}_sprints/**/**.md', recursive=True):
         info = re.split('/', file)
         unix = util.timeToUnix( datetime.strptime( info[-2], '%Y-%m-%d'))
         if util.xint( latest_unix) < unix:
@@ -112,12 +126,22 @@ def latest_sprints( dir, filter_owners=None ):
     return sprints
 
 
+# Export all sprints
+def export_sprints( base_dir, sprints ):
+    for sprint in sprints:
+        dir = f"{base_dir}/{sprint.date}"
+        Path(dir).mkdir(parents=True, exist_ok=True)
+
+        with open(f"{dir}/{sprint.owner}.md", 'w') as handle:
+            export_sprint( handle, sprint )
+
+
 # Parse all tags
-def all_tags( dir ):
+def import_tags( base_dir ):
     tags = []
 
     # Read in all the tags
-    for file in glob.glob(f'{dir}_tags/**.md', recursive=True):
+    for file in glob.glob(f'{base_dir}_tags/**.md', recursive=True):
         info = re.split('/', file)
         name = re.sub( r'[.]md$', '', info[-1].lower() )
         with open(file) as handle:
@@ -127,12 +151,22 @@ def all_tags( dir ):
     return tags
 
 
+# Export all sprints
+def export_tags( base_dir, tags ):
+    for tag in tags:
+        dir = f"{base_dir}"
+        Path(dir).mkdir(parents=True, exist_ok=True)
+
+        with open(f"{dir}/{tag.name}.md", 'w') as handle:
+            export_sprint( handle, tag )
+
+
 # Parse all tags
-def all_categories( dir ):
+def import_categories( base_dir ):
     categories = []
 
     # Read in all the categories
-    for file in glob.glob(f'{dir}_categories/**.md', recursive=True):
+    for file in glob.glob(f'{base_dir}_categories/**.md', recursive=True):
         info = re.split('/', file)
         name = re.sub( r'[.]md$', '', info[-1].lower() )
         with open(file) as handle:
@@ -140,6 +174,19 @@ def all_categories( dir ):
                 categories.append( category )
 
     return categories
+
+
+# Export all sprints
+def export_categories( base_dir, categories ):
+    for category in categories:
+        dir = f"{base_dir}"
+        Path(dir).mkdir(parents=True, exist_ok=True)
+
+        with open(f"{dir}/{category.name}.md", 'w') as handle:
+            export_sprint( handle, category )
+
+
+### Individual parse/export commands
 
 
 # Pass in an open filehandle and we'll generate a ticket
@@ -202,10 +249,12 @@ def export_ticket( handle, ticket ):
     if len(ticket.subitems) > 0:
         for si in ticket.subitems:
             if si.active:
-                handle.write(f'+ {si.name}\r\n')
+                handle.write(f'1. {si.name}\r\n')
             else:
-                handle.write(f'+ ~~{si.name}~~\r\n')
-            # Need to have sub item notes in here also
+                handle.write(f'1. ~~{si.name}~~\r\n')
+
+            for note in si.notes:
+                handle.write(f'{note}\r\n')
         handle.write("\r\n")
 
     # Write out the user's notes
