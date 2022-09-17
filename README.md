@@ -1,1 +1,3 @@
-# nitwit A disorganized and cumbersom ticketing system
+# nitwit 
+
+A disorganized and cumbersome ticketing system.

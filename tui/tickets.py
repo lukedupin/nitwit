@@ -11,8 +11,6 @@ def export_report( handle, tickets ):
     for idx, ticket in enumerate( sorted( tickets, key=lambda x: x.title )):
         if idx > 0:
             handle.write('\r\n\r\n')
-            handle.write('=====\r\n')
-            handle.write('\r\n\r\n')
 
         # Write the ticket out
         export_ticket( handle, ticket, include_uid=True )
@@ -23,8 +21,7 @@ def parse_report( handle, category ):
 
     while not util.is_eof(handle):
         # Parse out multiple tickets
-        ticket = parse_ticket( handle, halt_on_break=True )
-        if ticket is None:
+        if (ticket := parse_ticket( handle )) is None:
             continue
 
         # Create a UID?

@@ -66,26 +66,33 @@ def generate_uid( base_dir ):
 
 
 # Pass in an open filehandle and we'll generate a ticket
-def parse_ticket( handle, uid=None, halt_on_break=False ):
+def parse_ticket( handle, uid=None ):
     ticket = Ticket( uid )
 
     # Load up the files and go!
-    idx = -1
-    while (line := handle.readline()):
-        idx += 1
+    last_pos = handle.tell()
+    while (line := handle.readline()) is not None:
         line = line.rstrip()
 
-        # Halt on ticket break?
-        if halt_on_break and re.search('^===') is not None:
-            return ticket
+        # Store a new ticket?
+        if (ret := re.search(r'^\w*# (.*$)', line)) is not None:
+            # Are we starting another ticket? Reset the handler and exit
+            if ticket.title is not None:
+                handle.seek( last_pos )
+                break
 
-        # Store the title!
-        if idx == 0 and ticket.title is None and \
-           (ret := re.search(r'^# (.*$)', line)) is not None:
+            # Store the title
             ticket.title = ret.group(1)
 
-        # Setup the sub topics
-        elif (ret := re.search(r'^\w*[0-9]+[.][\t ]+(.*)$', line)):
+        # Store the last position
+        last_pos = handle.tell()
+
+        # Don't start until we have a title, this removes white space
+        if ticket.title is None:
+            continue
+
+        # Setup the sub topics, they are numbers
+        if (ret := re.search(r'^\w*[0-9]+[.][\t ]+(.*)$', line)):
             ticket.subitems.append( SubItem( ret.group(1)))
 
         # Find an account modifier
