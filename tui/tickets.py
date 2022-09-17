@@ -29,7 +29,7 @@ def parse_report( handle, category ):
 
         # Create a UID?
         if ticket.uid is None:
-            ticket.uid = generate_uid(f'gitickets/_tickets')
+            ticket.uid = generate_uid(f'nitwit/_tickets')
             if ticket.uid is None:
                 continue
 
