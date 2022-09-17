@@ -1,0 +1,12 @@
+# [REPORTS]
+
+TICKET_REPORT = True
+SPRINTS_ALL = True
+SPRINTS_USER = True
+CATEGORIES_REPORT = True
+
+HIDE_CATEGORIES = ['deleted', 'completed']
+
+# [USER]
+
+USERNAME = '{EMAIL_NAME}'

@@ -1,9 +1,9 @@
-import os, sys, re, glob
-
-from pathlib import Path
 from datetime import datetime
 
 from helpers import util
+
+from pathlib import Path
+import os, sys, re, glob, random
 
 
 class Ticket:
@@ -56,13 +56,28 @@ def export_tickets( base_dir, tickets ):
 
 ### Individual parse/export commands
 
+def generate_uid( base_dir ):
+    for _ in random(32):
+        uid = hex(random.randint(0, 1048576) & 0xFFFFF)[2:]
+        if not os.path.exists(f'{base_dir}/{uid}'):
+            return uid
+
+    return None
+
+
 # Pass in an open filehandle and we'll generate a ticket
-def parse_ticket( handle, uid ):
+def parse_ticket( handle, uid=None, halt_on_break=False ):
     ticket = Ticket( uid )
 
     # Load up the files and go!
-    for idx, line in enumerate( handle.readlines()):
+    idx = -1
+    while (line := handle.readline()):
+        idx += 1
         line = line.rstrip()
+
+        # Halt on ticket break?
+        if halt_on_break and re.search('^===') is not None:
+            return ticket
 
         # Store the title!
         if idx == 0 and ticket.title is None and \
@@ -79,7 +94,10 @@ def parse_ticket( handle, uid ):
                 if len(mod) <= 1:
                     continue
 
-                if mod[0] == '^':
+                if mod[0] == '$' and ticket.uid is None:
+                    ticket.uid = mod[1:]
+
+                elif mod[0] == '^':
                     ticket.category = mod[1:]
                 elif mod[0] == '!':
                     ticket.priority = util.xint( mod[1:] )
@@ -96,11 +114,13 @@ def parse_ticket( handle, uid ):
 
 
 # Pass in an open filehandle and we'll generate a ticket
-def export_ticket( handle, ticket ):
+def export_ticket( handle, ticket, include_uid=False ):
     handle.write(f'# {ticket.title}\r\n\r\n')
 
     # Write out the configuration options
     ret = None
+    if include_uid:
+        ret = handle.write(f'> ${ticket.uid}\r\n')
     if ticket.category is not None:
         ret = handle.write(f'> ^{ticket.category}\r\n')
     if len(ticket.owners) > 0:

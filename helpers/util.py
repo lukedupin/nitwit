@@ -10,7 +10,7 @@ from twilio.base.exceptions import TwilioException, TwilioRestException
 
 from tzwhere import tzwhere
 
-import datetime, math, re, pytz, base64, uuid, hashlib
+import datetime, math, re, pytz, base64, uuid, hashlib, os
 
 
 def sendSms( body, to ):
@@ -406,3 +406,6 @@ def hash_code():
     # Save the pwd reset code
     return m.hexdigest()
 
+
+def is_eof(handle):
+    return handle.tell() == os.fstat(handle.fileno()).st_size
