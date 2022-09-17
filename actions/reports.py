@@ -1,10 +1,15 @@
-from tui import settings
+from actions import settings
 from storage.tickets import Ticket
 from storage.tickets import parse_ticket, export_ticket, generate_uid
 
 from helpers import util
 
 import random, os
+
+
+def handle_gen( parser, options, args ):
+
+    return True
 
 
 def export_report( handle, tickets ):
