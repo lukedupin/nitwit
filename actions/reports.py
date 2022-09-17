@@ -8,7 +8,6 @@ import random, os
 
 
 def handle_gen( parser, options, args ):
-
     return True
 
 
