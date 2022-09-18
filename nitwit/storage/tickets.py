@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from helpers import util
+from nitwit.helpers import util
 
 from pathlib import Path
 import os, sys, re, glob, random
@@ -32,7 +32,7 @@ def import_tickets( base_dir, filter_uids=None ):
     tickets = []
 
     # Read in all the tickets
-    for file in glob.glob(f'{base_dir}_tickets/**/meta.md', recursive=True):
+    for file in glob.glob(f'{base_dir}/_tickets/**/meta.md', recursive=True):
         uid = re.split('/', file)[-2].lower()
         with open(file) as handle:
             if filter_uids is not None and uid not in filter_uids:
@@ -85,6 +85,8 @@ def parse_ticket( handle, uid=None ):
             ticket.title = ret.group(1)
 
         # Store the last position
+        if last_pos == handle.tell():
+            break
         last_pos = handle.tell()
 
         # Don't start until we have a title, this removes white space

@@ -1,6 +1,6 @@
-import os
-from git import Repo
-from helpers import util
+import os, git
+
+from nitwit.helpers import util
 
 
 def find_git_dir():
@@ -29,7 +29,7 @@ def load_settings():
     ]
 
     # Load it up
-    cr = Repo(dir).config_reader()
+    cr = git.Repo(dir).config_reader()
     for option, default, func in keys:
         result[option] = func(cr.get_value("nitwit", option, default))
 

@@ -1,14 +1,28 @@
-from storage.tickets import Ticket
-from storage.tickets import parse_ticket, export_ticket, generate_uid
-
-from storage import 
-from helpers import util
+from nitwit.storage import tickets as tickets_mod
+from nitwit.helpers import util
 
 import random, os
 
 
 def handle_gen( parser, options, args, settings ):
+    # Load in all the tickets
+    tickets = tickets_mod.import_tickets( settings['directory'] )
 
+    # Open files as needed, and dump tickets into those files
+    handles = {}
+    for ticket in tickets:
+        # Pull the cateogry and load the files as needed
+        if (category := util.xstr(ticket.category)) == "":
+            category = "tickets_report"
+        if category not in handles:
+            handles[category] = open(f"{settings['directory']}/{category}.md", 'w')
+
+        # Export the ticket data into the files
+        tickets_mod.export_ticket( handles[category], ticket, include_uid=True )
+
+    # Close down all the open reports
+    for key in handles.keys():
+        handles[key].close()
 
     return True
 
@@ -19,7 +33,7 @@ def export_report( handle, tickets ):
             handle.write('\r\n\r\n')
 
         # Write the ticket out
-        export_ticket( handle, ticket, include_uid=True )
+        tickets_mod.export_ticket( handle, ticket, include_uid=True )
 
 
 def parse_report( handle, category ):
@@ -27,12 +41,12 @@ def parse_report( handle, category ):
 
     while not util.is_eof(handle):
         # Parse out multiple tickets
-        if (ticket := parse_ticket( handle )) is None:
+        if (ticket := tickets_mod.parse_ticket( handle )) is None:
             continue
 
         # Create a UID?
         if ticket.uid is None:
-            ticket.uid = generate_uid(f'nitwit/_tickets')
+            ticket.uid = tickets_mod.generate_uid(f'nitwit/_tickets')
             if ticket.uid is None:
                 continue
 

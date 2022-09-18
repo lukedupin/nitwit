@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
 from optparse import OptionParser
-from actions import reports
 
-from helpers.settings import load_settings
+from nitwit.actions import reports
+from nitwit.helpers.settings import load_settings
 
 
 # Configure the usage

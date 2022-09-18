@@ -3,7 +3,7 @@ import os, sys, re, glob
 from pathlib import Path
 from datetime import datetime
 
-from helpers import util
+from nitwit.helpers import util
 
 
 class Tag:
