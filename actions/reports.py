@@ -1,13 +1,15 @@
-from actions import settings
 from storage.tickets import Ticket
 from storage.tickets import parse_ticket, export_ticket, generate_uid
 
+from storage import 
 from helpers import util
 
 import random, os
 
 
-def handle_gen( parser, options, args ):
+def handle_gen( parser, options, args, settings ):
+
+
     return True
 
 

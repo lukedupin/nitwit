@@ -3,6 +3,10 @@
 from optparse import OptionParser
 from actions import reports
 
+from helpers.settings import load_settings
+
+
+# Configure the usage
 usage = "usage: %command [options] arg"
 parser = OptionParser(usage)
 parser.add_option("-f", "--file", dest="filename", help="read data from FILENAME")
@@ -11,14 +15,18 @@ parser.add_option("-q", "--quiet", action="store_false", dest="verbose")
 
 (options, args) = parser.parse_args()
 
+# Load the git/config settings file
+if (settings := load_settings()) is None:
+    parser.error("Please only run inside of a git repo")
+
 if len(args) < 1:
-    parser.error("Please specify a command")
+    parser.error("Couldn't find a valid git repo")
 
 valid = False
 if args[0] == 'gen':
-    valid = reports.handle_gen(parser, options, args)
+    valid = reports.handle_gen(parser, options, args, settings)
 elif args[0] == 'process':
-    valid = reports.handle_process(parser, options, args)
+    valid = reports.handle_process(parser, options, args, settings)
 
 if not valid:
     parser.error('''Invalid args, review the info
