@@ -2,7 +2,7 @@
 
 from optparse import OptionParser
 
-from nitwit.actions import reports, tags, categories, tickets
+from nitwit.actions import reports, tags, categories, tickets, init
 from nitwit.helpers.settings import load_settings
 
 
@@ -24,8 +24,12 @@ if len(args) < 1:
 
 err = None
 
+## Installation / Setup
+if args[0] == 'init':
+    err = init.handle_init(parser, options, args)
+
 ## Reports
-if args[0] == 'gen':
+elif args[0] == 'gen':
     err = reports.handle_gen(parser, options, args, settings)
 elif args[0] == 'process':
     err = reports.handle_process(parser, options, args, settings)

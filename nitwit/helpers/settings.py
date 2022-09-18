@@ -3,6 +3,20 @@ import os, git
 from nitwit.helpers import util
 
 
+## Defines the configuration section of the git file
+NAMESPACE = 'nitwit'
+CONF = [
+    ('directory',       'examples', util.xstr),
+    ('defaultcategory', 'pending', util.xstr),
+]
+CATEGORIES = [
+    'pending',
+    'in_progress',
+    'testing',
+    'completed',
+    'trash'
+]
+
 def find_git_dir():
     dirs = os.getcwd().split('/')
     count = len(dirs)
@@ -23,14 +37,28 @@ def load_settings():
 
     result = {}
 
-    # Define all the settings and their defaults we're going to load
-    keys = [
-        ('directory', 'nitwit', lambda x: f'{dir}/' + util.xstr(x)),
-    ]
-
     # Load it up
     cr = git.Repo(dir).config_reader()
-    for option, default, func in keys:
-        result[option] = func(cr.get_value("nitwit", option, default))
+    for option, default, func in CONF:
+        result[option] = func(cr.get_value(NAMESPACE, option, default))
+
+        if option == 'directory':
+            result[option] = f"{dir}/{result[option]}"
 
     return result
+
+
+def install_into_git():
+    if (dir := find_git_dir()) is None:
+        return "Couldn't find a valid git repo"
+
+    # Write out the config values
+    cw = git.Repo(dir).config_writer()
+    for option, default, func in CONF:
+        cw.set_value(NAMESPACE, option, default)
+    cw.release()
+
+    print(f"Initialized nitwit configuration into Git repository in {dir}/.git")
+
+    return None
+

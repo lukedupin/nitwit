@@ -17,11 +17,11 @@ class Category:
 ### Bulk commands for parsing and writing to the filesystem
 
 # Parse all tags
-def import_categories( base_dir, filter_names=None ):
+def import_categories( settings, filter_names=None ):
     categories = []
 
     # Read in all the categories
-    for file in glob.glob(f'{base_dir}/_categories/**.md', recursive=True):
+    for file in glob.glob(f"{settings['directory']}/_categories/**.md", recursive=True):
         info = re.split('/', file)
         name = re.sub( r'[.]md$', '', info[-1].lower() )
         if filter_names is not None and name not in filter_names:
@@ -35,9 +35,9 @@ def import_categories( base_dir, filter_names=None ):
 
 
 # Export all sprints
-def export_categories( base_dir, categories ):
+def export_categories( settings, categories ):
     for category in categories:
-        dir = f"{base_dir}/_categories"
+        dir = f"{settings['directory']}/_categories"
         Path(dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{dir}/{category.name}.md", 'w') as handle:

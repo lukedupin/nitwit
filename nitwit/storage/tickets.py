@@ -48,7 +48,10 @@ def import_tickets( settings, filter_uids=None ):
 # Export all tickets
 def export_tickets( settings, tickets ):
     for ticket in tickets:
-        dir = f"{settings['directory']}/{ticket.uid}"
+        if ticket.uid is None:
+            ticket.uid = generate_uid( settings['directory'] )
+
+        dir = f"{settings['directory']}/_tickets/{ticket.uid}"
         Path(dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{dir}/meta.md", 'w') as handle:
@@ -58,7 +61,7 @@ def export_tickets( settings, tickets ):
 ### Individual parse/export commands
 
 def generate_uid( base_dir ):
-    for _ in random(32):
+    for _ in range(32):
         uid = hex(random.randint(0, 1048576) & 0xFFFFF)[2:]
         if not os.path.exists(f'{base_dir}/{uid}'):
             return uid
@@ -73,6 +76,9 @@ def parse_ticket( settings, handle, uid=None ):
     # Load up the files and go!
     last_pos = handle.tell()
     while (line := handle.readline()) is not None:
+        # Detect eof
+        if last_pos == handle.tell():
+            break
         line = line.rstrip()
 
         # Store a new ticket?
@@ -84,10 +90,10 @@ def parse_ticket( settings, handle, uid=None ):
 
             # Store the title
             ticket.title = ret.group(1)
+            last_pos = handle.tell()
+            continue
 
         # Store the last position
-        if last_pos == handle.tell():
-            break
         last_pos = handle.tell()
 
         # Don't start until we have a title, this removes white space
