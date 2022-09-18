@@ -1,4 +1,5 @@
 from nitwit.storage import tickets as tickets_mod
+from nitwit.storage import categories as categories_mod
 from nitwit.helpers import util
 
 import random, os
@@ -7,11 +8,19 @@ import random, os
 def handle_gen( parser, options, args, settings ):
     # Load in all the tickets
     tickets = tickets_mod.import_tickets( settings['directory'] )
+    categories = categories_mod.import_categories( settings['directory'] )
+
+    handles = {}
+
+    # Load categories
+    for category in categories:
+        cat = category.name
+        if cat not in handles:
+            handles[cat] = open(f"{settings['directory']}/{cat}.md", 'w')
 
     # Open files as needed, and dump tickets into those files
-    handles = {}
     for ticket in tickets:
-        # Pull the cateogry and load the files as needed
+        # Pull the category and load the files as needed
         if (category := util.xstr(ticket.category)) == "":
             category = "tickets_report"
         if category not in handles:
@@ -24,7 +33,7 @@ def handle_gen( parser, options, args, settings ):
     for key in handles.keys():
         handles[key].close()
 
-    return True
+    return None
 
 
 def export_report( handle, tickets ):

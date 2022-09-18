@@ -7,7 +7,8 @@ import os, sys, re, glob, random
 
 
 class Ticket:
-    def __init__(self, uid):
+    def __init__(self, filename, uid):
+        self.filename = filename
         self.uid = uid
         self.title = None
         self.category = None
@@ -67,7 +68,7 @@ def generate_uid( base_dir ):
 
 # Pass in an open filehandle and we'll generate a ticket
 def parse_ticket( handle, uid=None ):
-    ticket = Ticket( uid )
+    ticket = Ticket( handle.name, uid )
 
     # Load up the files and go!
     last_pos = handle.tell()

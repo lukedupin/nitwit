@@ -5,24 +5,28 @@ from datetime import datetime
 
 from nitwit.helpers import util
 
+
 class Category:
-    def __init__(self, name):
-        self.name = None
+    def __init__(self, filename, name):
+        self.filename = filename
+        self.name = name
         self.title = None
         self.notes = []
 
 
 ### Bulk commands for parsing and writing to the filesystem
 
-
 # Parse all tags
-def import_categories( base_dir ):
+def import_categories( base_dir, filter_names=None ):
     categories = []
 
     # Read in all the categories
-    for file in glob.glob(f'{base_dir}_categories/**.md', recursive=True):
+    for file in glob.glob(f'{base_dir}/_categories/**.md', recursive=True):
         info = re.split('/', file)
         name = re.sub( r'[.]md$', '', info[-1].lower() )
+        if filter_names is not None and name not in filter_names:
+            continue
+
         with open(file) as handle:
             if (category := parse_category( handle, name )) is not None:
                 categories.append( category )
@@ -33,7 +37,7 @@ def import_categories( base_dir ):
 # Export all sprints
 def export_categories( base_dir, categories ):
     for category in categories:
-        dir = f"{base_dir}"
+        dir = f"{base_dir}/_categories"
         Path(dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{dir}/{category.name}.md", 'w') as handle:
@@ -45,7 +49,7 @@ def export_categories( base_dir, categories ):
 
 # Parse tags
 def parse_category( handle, name ):
-    category = Category( name )
+    category = Category( handle.name, name )
 
     # Load up the files and go!
     for idx, line in enumerate( handle.readlines()):

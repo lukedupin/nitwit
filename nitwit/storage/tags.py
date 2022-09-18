@@ -7,8 +7,9 @@ from nitwit.helpers import util
 
 
 class Tag:
-    def __init__(self, name):
-        self.name = None
+    def __init__(self, filename, name):
+        self.filename = filename
+        self.name = name
         self.title = None
         self.notes = []
 
@@ -16,13 +17,16 @@ class Tag:
 ### Bulk commands for parsing and writing to the filesystem
 
 # Parse all tags
-def import_tags( base_dir ):
+def import_tags( base_dir, filter_names=None ):
     tags = []
 
     # Read in all the tags
-    for file in glob.glob(f'{base_dir}_tags/**.md', recursive=True):
+    for file in glob.glob(f'{base_dir}/_tags/**.md', recursive=True):
         info = re.split('/', file)
         name = re.sub( r'[.]md$', '', info[-1].lower() )
+        if filter_names is not None and name not in filter_names:
+            continue
+
         with open(file) as handle:
             if (tag := parse_tag( handle, name )) is not None:
                 tags.append( tag )
@@ -33,7 +37,7 @@ def import_tags( base_dir ):
 # Export all sprints
 def export_tags( base_dir, tags ):
     for tag in tags:
-        dir = f"{base_dir}"
+        dir = f"{base_dir}/_tags"
         Path(dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{dir}/{tag.name}.md", 'w') as handle:
@@ -44,7 +48,7 @@ def export_tags( base_dir, tags ):
 
 # Parse tags
 def parse_tag( handle, name ):
-    tag = Tag( name )
+    tag = Tag( handle.name, name )
 
     # Load up the files and go!
     for idx, line in enumerate( handle.readlines()):

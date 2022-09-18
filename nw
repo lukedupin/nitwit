@@ -2,7 +2,7 @@
 
 from optparse import OptionParser
 
-from nitwit.actions import reports
+from nitwit.actions import reports, tags, categories
 from nitwit.helpers.settings import load_settings
 
 
@@ -22,12 +22,25 @@ if (settings := load_settings()) is None:
 if len(args) < 1:
     parser.error("Couldn't find a valid git repo")
 
-valid = False
-if args[0] == 'gen':
-    valid = reports.handle_gen(parser, options, args, settings)
-elif args[0] == 'process':
-    valid = reports.handle_process(parser, options, args, settings)
+err = None
 
-if not valid:
-    parser.error('''Invalid args, review the info
+## Reports
+if args[0] == 'gen':
+    err = reports.handle_gen(parser, options, args, settings)
+elif args[0] == 'process':
+    err = reports.handle_process(parser, options, args, settings)
+
+## Tags
+elif args[0] == 'tag':
+    err = tags.handle_tag(parser, options, args, settings)
+
+## Categories
+elif args[0] == 'category':
+    err = categories.handle_category(parser, options, args, settings)
+
+## Errors
+if err is not None:
+    parser.error(f'''Invalid args, review the info
+
+{err}
 ''')
