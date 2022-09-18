@@ -45,6 +45,10 @@ def load_settings():
         if option == 'directory':
             result[option] = f"{dir}/{result[option]}"
 
+    # Pull the user information
+    for key in ('email', 'name'):
+        result[key] = cr.get_value('user', key)
+
     return result
 
 
