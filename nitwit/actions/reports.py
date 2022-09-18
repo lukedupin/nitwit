@@ -7,8 +7,8 @@ import random, os
 
 def handle_gen( parser, options, args, settings ):
     # Load in all the tickets
-    tickets = tickets_mod.import_tickets( settings['directory'] )
-    categories = categories_mod.import_categories( settings['directory'] )
+    tickets = tickets_mod.import_tickets( settings )
+    categories = categories_mod.import_categories( settings )
 
     handles = {}
 
@@ -36,27 +36,3 @@ def handle_gen( parser, options, args, settings ):
     return None
 
 
-def export_report( handle, tickets ):
-    for idx, ticket in enumerate( sorted( tickets, key=lambda x: x.title )):
-        if idx > 0:
-            handle.write('\r\n\r\n')
-
-        # Write the ticket out
-        tickets_mod.export_ticket( handle, ticket, include_uid=True )
-
-
-def parse_report( handle, category ):
-    tickets = []
-
-    while not util.is_eof(handle):
-        # Parse out multiple tickets
-        if (ticket := tickets_mod.parse_ticket( handle )) is None:
-            continue
-
-        # Create a UID?
-        if ticket.uid is None:
-            ticket.uid = tickets_mod.generate_uid(f'nitwit/_tickets')
-            if ticket.uid is None:
-                continue
-
-        tickets.append( ticket )

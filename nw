@@ -2,7 +2,7 @@
 
 from optparse import OptionParser
 
-from nitwit.actions import reports, tags, categories
+from nitwit.actions import reports, tags, categories, tickets
 from nitwit.helpers.settings import load_settings
 
 
@@ -29,6 +29,10 @@ if args[0] == 'gen':
     err = reports.handle_gen(parser, options, args, settings)
 elif args[0] == 'process':
     err = reports.handle_process(parser, options, args, settings)
+
+## Tickets
+elif args[0] == 'ticket':
+    err = tickets.handle_ticket( parser, options, args, settings )
 
 ## Tags
 elif args[0] == 'tag':

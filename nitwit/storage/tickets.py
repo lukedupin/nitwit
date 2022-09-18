@@ -7,11 +7,11 @@ import os, sys, re, glob, random
 
 
 class Ticket:
-    def __init__(self, filename, uid):
+    def __init__(self, filename, uid, category):
         self.filename = filename
         self.uid = uid
         self.title = None
-        self.category = None
+        self.category = category
         self.priority = None
         self.owners = []
         self.tags = []
@@ -29,26 +29,26 @@ class SubItem:
 ### Bulk commands for parsing and writing to the filesystem
 
 # Parse all tickets
-def import_tickets( base_dir, filter_uids=None ):
+def import_tickets( settings, filter_uids=None ):
     tickets = []
 
     # Read in all the tickets
-    for file in glob.glob(f'{base_dir}/_tickets/**/meta.md', recursive=True):
+    for file in glob.glob(f'{settings["directory"]}/_tickets/**/meta.md', recursive=True):
         uid = re.split('/', file)[-2].lower()
         with open(file) as handle:
             if filter_uids is not None and uid not in filter_uids:
                 continue
 
-            if (ticket := parse_ticket( handle, uid )) is not None:
+            if (ticket := parse_ticket( settings, handle, uid )) is not None:
                 tickets.append( ticket )
 
     return tickets
 
 
 # Export all tickets
-def export_tickets( base_dir, tickets ):
+def export_tickets( settings, tickets ):
     for ticket in tickets:
-        dir = f"{base_dir}/{ticket.uid}"
+        dir = f"{settings['directory']}/{ticket.uid}"
         Path(dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{dir}/meta.md", 'w') as handle:
@@ -67,8 +67,8 @@ def generate_uid( base_dir ):
 
 
 # Pass in an open filehandle and we'll generate a ticket
-def parse_ticket( handle, uid=None ):
-    ticket = Ticket( handle.name, uid )
+def parse_ticket( settings, handle, uid=None ):
+    ticket = Ticket( handle.name, uid, settings['defaultcategory'] )
 
     # Load up the files and go!
     last_pos = handle.tell()
