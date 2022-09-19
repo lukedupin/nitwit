@@ -47,15 +47,28 @@ def import_tickets( settings, filter_uids=None ):
 
 # Export all tickets
 def export_tickets( settings, tickets ):
+    new_count = 0
+    update_count = 0
+
     for ticket in tickets:
         if ticket.uid is None:
             ticket.uid = generate_uid( settings['directory'] )
+            new_count += 1
 
         dir = f"{settings['directory']}/_tickets/{ticket.uid}"
         Path(dir).mkdir(parents=True, exist_ok=True)
+        filename = f"{dir}/meta.md"
 
+        # Hash before we write
+        before = util.sha256sum( filename )
         with open(f"{dir}/meta.md", 'w') as handle:
             export_ticket( handle, ticket )
+
+        # Check if anything changed
+        if before != util.sha256sum( filename ):
+            update_count += 1
+
+    return new_count, update_count
 
 
 ### Individual parse/export commands
@@ -70,38 +83,30 @@ def generate_uid( base_dir ):
 
 
 # Pass in an open filehandle and we'll generate a ticket
-def parse_ticket( settings, handle, uid=None ):
-    ticket = Ticket( handle.name, uid, settings['defaultcategory'] )
+def parse_ticket( settings, handle, uid=None, category=None ):
+    if category is None:
+        category = settings['defaultcategory']
+    ticket = Ticket( handle.name, uid, category )
 
     # Load up the files and go!
     last_pos = handle.tell()
-    while (line := handle.readline()) is not None:
-        # Detect eof
-        if last_pos == handle.tell():
-            break
+    while (line := handle.readline()) is not None and \
+          (new_last_pos := handle.tell()) != last_pos:
+        last_pos = new_last_pos
+
+        # Strip out the line
         line = line.rstrip()
 
+        # Did we reach the end of a multi read ticket?
+        if re.search(r'^======', line) is not None:
+            break
+
         # Store a new ticket?
-        if (ret := re.search(r'^\w*# (.*$)', line)) is not None:
-            # Are we starting another ticket? Reset the handler and exit
-            if ticket.title is not None:
-                handle.seek( last_pos )
-                break
-
-            # Store the title
+        if ticket.title is None and (ret := re.search(r'^\w*# (.*$)', line)) is not None:
             ticket.title = ret.group(1)
-            last_pos = handle.tell()
-            continue
-
-        # Store the last position
-        last_pos = handle.tell()
-
-        # Don't start until we have a title, this removes white space
-        if ticket.title is None:
-            continue
 
         # Setup the sub topics, they are numbers
-        if (ret := re.search(r'^\w*[0-9]+[.][\t ]+(.*)$', line)):
+        elif (ret := re.search(r'^\w*[0-9]+[.][\t ]+(.*)$', line)):
             ticket.subitems.append( SubItem( ret.group(1)))
 
         # Find an account modifier
@@ -123,10 +128,10 @@ def parse_ticket( settings, handle, uid=None ):
                     ticket.tags.append( mod[1:] )
 
         # Add in all the chatter
-        else:
+        elif re.search(r'^\w*$', line) is None:
             ticket.notes.append( line )
 
-    return ticket
+    return ticket if ticket.title is not None else None
 
 
 # Pass in an open filehandle and we'll generate a ticket
@@ -161,5 +166,7 @@ def export_ticket( handle, ticket, include_uid=False ):
         handle.write("\r\n")
 
     # Write out the user's notes
-    for note in ticket.notes:
-        handle.write(f'{note}\r\n')
+    if len(ticket.notes) > 0:
+        for note in ticket.notes:
+            handle.write(f'{note}\r\n')
+        handle.write("\r\n")

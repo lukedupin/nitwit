@@ -409,3 +409,16 @@ def hash_code():
 
 def is_eof(handle):
     return handle.tell() == os.fstat(handle.fileno()).st_size
+
+
+def sha256sum(filename):
+    if not os.path.exists(filename):
+        return None
+
+    h  = hashlib.sha256()
+    b  = bytearray(128*1024)
+    mv = memoryview(b)
+    with open(filename, 'rb', buffering=0) as f:
+        while n := f.readinto(mv):
+            h.update(mv[:n])
+    return h.hexdigest()

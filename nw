@@ -31,8 +31,8 @@ if args[0] == 'init':
 ## Reports
 elif args[0] == 'gen':
     err = reports.handle_gen(parser, options, args, settings)
-elif args[0] == 'process':
-    err = reports.handle_process(parser, options, args, settings)
+elif args[0] == 'consume':
+    err = reports.handle_consume(parser, options, args, settings)
 
 ## Tickets
 elif args[0] == 'ticket':
@@ -45,6 +45,9 @@ elif args[0] == 'tag':
 ## Categories
 elif args[0] == 'category':
     err = categories.handle_category(parser, options, args, settings)
+
+else:
+    err = "Unknown command"
 
 ## Errors
 if err is not None:
