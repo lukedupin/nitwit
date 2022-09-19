@@ -1,4 +1,5 @@
 import os, git
+import re
 
 from nitwit.helpers import util
 
@@ -48,6 +49,9 @@ def load_settings():
     # Pull the user information
     for key in ('email', 'name'):
         result[key] = cr.get_value('user', key)
+
+    # Load the username
+    result['username'] = re.sub('@.*$', '', result['email'])
 
     return result
 

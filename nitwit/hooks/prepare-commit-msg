@@ -2,11 +2,6 @@
 
 import os, sys
 
-# %ae = Extract the user email from the last commit (author email)
-USER_EMAIL=$(git log -1 --format=format:%ae HEAD)
-
-# %an = Extract the username from the last commit (author name)
-USER_NAME=$(git log -1 --format=format:%an HEAD)
 
 with open(sys.argv[1]) as handle:
     for line in handle.readlines():
