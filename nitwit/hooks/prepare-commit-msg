@@ -1,13 +1,19 @@
 #!/usr/bin/python3
 
-import os, sys
+from nitwit.actions import commit_message
+from nitwit.helpers.settings import load_settings
 
-# %ae = Extract the user email from the last commit (author email)
-USER_EMAIL=$(git log -1 --format=format:%ae HEAD)
+import sys, os
 
-# %an = Extract the username from the last commit (author name)
-USER_NAME=$(git log -1 --format=format:%an HEAD)
+if (settings := load_settings()) is None:
+    print("Couldn't load git config")
+    exit(1)
 
-with open(sys.argv[1]) as handle:
-    for line in handle.readlines():
-        print(line)
+if len(sys.argv) <= 1:
+    print("Didn't get the message file")
+    exit(1)
+
+# Update the message
+print(sys.argv[1])
+commit_message.handle_prepare_commit( settings, sys.argv[1] )
+exit(0)

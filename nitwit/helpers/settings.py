@@ -1,4 +1,5 @@
 import os, git
+import re
 
 from nitwit.helpers import util
 
@@ -8,6 +9,8 @@ NAMESPACE = 'nitwit'
 CONF = [
     ('directory',       'examples', util.xstr),
     ('defaultcategory', 'pending', util.xstr),
+    ('subscribecategories', 'in_progress', lambda x: util.xstr(x).split(',')),
+    ('subscribetags', 'bug,crash', lambda x: util.xstr(x).split(',')),
 ]
 CATEGORIES = [
     'pending',
@@ -15,6 +18,11 @@ CATEGORIES = [
     'testing',
     'completed',
     'trash'
+]
+TAGS = [
+    'bug',
+    'crash',
+    'feature',
 ]
 
 def find_git_dir():
@@ -48,6 +56,9 @@ def load_settings():
     # Pull the user information
     for key in ('email', 'name'):
         result[key] = cr.get_value('user', key)
+
+    # Load the username
+    result['username'] = re.sub('@.*$', '', result['email'])
 
     return result
 

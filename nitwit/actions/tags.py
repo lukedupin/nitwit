@@ -7,7 +7,7 @@ import random, os
 def handle_tag( parser, options, args, settings ):
     # Print out the tags
     if len(args) < 2:
-        tags = tags_mod.import_tags( settings['directory'] )
+        tags = tags_mod.import_tags( settings )
         if len(tags) <= 0:
             print( "No tags found. Try creating one." )
 
@@ -21,11 +21,11 @@ def handle_tag( parser, options, args, settings ):
     tag_name = args[1].lower()
 
     # Either creator or edit a tag
-    tags = tags_mod.import_tags( settings['directory'], filter_names=[tag_name] )
+    tags = tags_mod.import_tags( settings, filter_names=[tag_name] )
     if len(tags) <= 0:
         tag = tags_mod.Tag( None, tag_name )
         tag.title = tag.name.capitalize()
-        tags_mod.export_tags( settings['directory'], [tag] )
+        tags_mod.export_tags( settings, [tag] )
         print(f"Created tag #{tag.name}")
 
     else:
