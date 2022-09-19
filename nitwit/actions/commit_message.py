@@ -28,6 +28,7 @@ def handle_prepare_commit( settings, filename ):
 
     # Write out the file
     with open(filename, "w") as handle:
+        handle.write("\n")
         handle.write("# Sprint:\n")
 
         # Load up the tickets
@@ -40,7 +41,6 @@ def handle_prepare_commit( settings, filename ):
 
         # Add the common message
         for line in msg_file.contents:
-            print(line)
             handle.write( line )
 
     return None
@@ -50,7 +50,10 @@ def process_msg_file( filename ):
     msg_file = MsgFile()
 
     with open( filename ) as handle:
-        msg_file.contents = handle.readlines()
+        msg_file.contents = []
+        for line in handle.readlines():
+            if line.rstrip() != "":
+                msg_file.contents.append( line )
 
         # Process the files
         for line in msg_file.contents:
