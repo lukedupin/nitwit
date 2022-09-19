@@ -17,11 +17,11 @@ class Tag:
 ### Bulk commands for parsing and writing to the filesystem
 
 # Parse all tags
-def import_tags( base_dir, filter_names=None ):
+def import_tags( settings, filter_names=None ):
     tags = []
 
     # Read in all the tags
-    for file in glob.glob(f'{base_dir}/_tags/**.md', recursive=True):
+    for file in glob.glob(f'{settings["directory"]}/_tags/**.md', recursive=True):
         info = re.split('/', file)
         name = re.sub( r'[.]md$', '', info[-1].lower() )
         if filter_names is not None and name not in filter_names:
@@ -35,9 +35,9 @@ def import_tags( base_dir, filter_names=None ):
 
 
 # Export all sprints
-def export_tags( base_dir, tags ):
+def export_tags( settings, tags ):
     for tag in tags:
-        dir = f"{base_dir}/_tags"
+        dir = f'{settings["directory"]}/_tags'
         Path(dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{dir}/{tag.name}.md", 'w') as handle:

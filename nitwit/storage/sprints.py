@@ -17,12 +17,28 @@ class Sprint:
 
 ### Bulk commands for parsing and writing to the filesystem
 
+# Return the latest sprint date
+def get_latest_sprint_date( settings ):
+    latest_dir = None
+    latest_unix = None
+
+    # Read in all the sprints
+    for file in glob.glob(f'{settings["directory"]}_sprints/**/'):
+        info = re.split('/', file)
+        unix = util.timeToUnix( datetime.strptime( info[-2], '%Y-%m-%d'))
+        if util.xint( latest_unix) < unix:
+            latest_dir = '/'.join( info[0:-1])
+            latest_unix = unix
+
+    return latest_dir
+
+
 # Parse all sprints
-def import_sprints( base_dir, filter_owners=None ):
+def import_sprints( settings, filter_owners=None ):
     sprints = []
 
     # Read in all the sprints
-    for file in glob.glob(f'{base_dir}_sprints/**/meta.md', recursive=True):
+    for file in glob.glob(f'{settings["directory"]}_sprints/**/meta.md', recursive=True):
         owner = re.split('/', file)[-2].lower()
         with open(file) as handle:
             if filter_owners is not None and owner not in filter_owners:
@@ -35,21 +51,11 @@ def import_sprints( base_dir, filter_owners=None ):
 
 
 # Parse all sprints
-def import_latest_sprints( base_dir, filter_owners=None ):
+def import_latest_sprints( settings, filter_owners=None ):
     sprints = []
 
-    latest_dir = None
-    latest_unix = None
-
-    # Read in all the sprints
-    for file in glob.glob(f'{base_dir}_sprints/**/**.md', recursive=True):
-        info = re.split('/', file)
-        unix = util.timeToUnix( datetime.strptime( info[-2], '%Y-%m-%d'))
-        if util.xint( latest_unix) < unix:
-            latest_dir = '/'.join( info[0:-1])
-            latest_unix = unix
-
-    if latest_dir is None:
+    # Is there no directory?
+    if (latest_dir := get_latest_sprint_date( settings )) is None:
         return sprints
 
     # Read in all the sprints
@@ -68,9 +74,9 @@ def import_latest_sprints( base_dir, filter_owners=None ):
 
 
 # Export all sprints
-def export_sprints( base_dir, sprints ):
+def export_sprints( settings, sprints ):
     for sprint in sprints:
-        dir = f"{base_dir}/{sprint.date}"
+        dir = f"{settings['directory']}/{sprint.date}"
         Path(dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{dir}/{sprint.owner}.md", 'w') as handle:
@@ -84,35 +90,53 @@ def parse_sprint( handle, date, owner ):
     sprint = Sprint( date, owner )
 
     # Load up the files and go!
-    for idx, line in enumerate( handle.readlines()):
+    last_pos = handle.tell()
+    while (line := handle.readline()) is not None and \
+            (new_last_pos := handle.tell()) != last_pos:
+        last_pos = new_last_pos
+
+        # Strip out the line
         line = line.rstrip()
 
+        # Did we reach the end of a multi read ticket?
+        if re.search(r'^======', line) is not None:
+            break
+
         # Store the title!
-        if idx == 0 and sprint.title is None and \
-           (ret := re.search(r'^# (.*$)', line)) is not None:
-            sprint.title = ret.group(1)
+        if (ret := re.search(r'^# @([0-9a-zA-Z]+)[ ]*(.*)', line)) is not None:
+            sprint.owner = ret.group(1)
+            sprint.title = ret.group(2)
 
         # Setup the sub topics
         elif (ret := re.search(r'^\w*[*+-][\t ]+[$](.*)$', line)):
             sprint.ticket_uids.append( ret.group(1).lower())
 
         # Add in all the chatter
-        else:
+        elif re.search(r'^\w*$', line) is None:
             sprint.notes.append( line )
 
-    return sprint
+    return sprint if sprint.owner is not None else None
 
 
 # Write out a spring file
-def export_sprint( handle, sprint ):
+def export_sprint( handle, sprint, title_lookup={} ):
     if sprint.title is not None:
-        handle.write(f'# {sprint.title}\r\n')
-        handle.write('\r\n')
+        handle.write(f'# {sprint.owner} {sprint.title[:64]}\r\n')
+    else:
+        handle.write(f'# @{sprint.owner}\r\n')
+    handle.write('\r\n')
 
     # Write out the subitems
     if len(sprint.ticket_uids) > 0:
         for uid in sprint.ticket_uids:
-            handle.write(f'* ${uid}\r\n')
+            if (title := title_lookup.get(uid)) is not None:
+                handle.write(f'+ ${uid} {title[:64]}\r\n')
+            else:
+                handle.write(f'+ ${uid}\r\n')
+        handle.write("\r\n")
+
+    else:
+        handle.write("+ \r\n")
         handle.write("\r\n")
 
     # Write out the user's notes

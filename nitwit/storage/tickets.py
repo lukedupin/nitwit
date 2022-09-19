@@ -42,7 +42,7 @@ def import_tickets( settings, filter_uids=None ):
             if (ticket := parse_ticket( settings, handle, uid )) is not None:
                 tickets.append( ticket )
 
-    return tickets
+    return sorted( tickets, key=lambda x: x.title )
 
 
 # Export all tickets

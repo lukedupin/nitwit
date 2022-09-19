@@ -7,10 +7,11 @@ from nitwit.helpers import util
 ## Defines the configuration section of the git file
 NAMESPACE = 'nitwit'
 CONF = [
-    ('directory',       'examples', util.xstr),
-    ('defaultcategory', 'pending', util.xstr),
+    ('directory',           'examples', util.xstr),
+    ('defaultcategory',     'pending', util.xstr),
     ('subscribecategories', 'in_progress', lambda x: util.xstr(x).split(',')),
-    ('subscribetags', 'bug,crash', lambda x: util.xstr(x).split(',')),
+    ('subscribetags',       'bug,crash', lambda x: util.xstr(x).split(',')),
+    ('sprintcategories',    'pending,in_progress,testing', lambda x: util.xstr(x).split(',')),
 ]
 CATEGORIES = [
     'pending',
@@ -24,6 +25,12 @@ TAGS = [
     'crash',
     'feature',
 ]
+
+class User:
+    def __init__(self):
+        self.name = None
+        self.username = None
+        self.email = None
 
 def find_git_dir():
     dirs = os.getcwd().split('/')
@@ -63,17 +70,30 @@ def load_settings():
     return result
 
 
-def install_into_git():
+def get_users( settings ):
     if (dir := find_git_dir()) is None:
-        return "Couldn't find a valid git repo"
+        return None
 
-    # Write out the config values
-    cw = git.Repo(dir).config_writer()
-    for option, default, func in CONF:
-        cw.set_value(NAMESPACE, option, default)
-    cw.release()
+    users = {}
+    emails = {
+        'noreply@github.com': True,
+    }
+    for repo in git.Repo(dir).iter_commits():
+        if repo.committer.email in emails:
+            continue
 
-    print(f"Initialized nitwit configuration into Git repository in {dir}/.git")
+        # Create a new user
+        user = User()
+        user.name = repo.committer.name
+        user.username = re.sub("@.*$", '', repo.committer.email)
+        user.email = repo.committer.email
+        users[user.username] = user
+        emails[user.email] = True
 
-    return None
+    myself = []
+    if settings['username'] in users:
+        myself.append( users[settings['username']])
+        del users[settings['username']]
+
+    return myself + [users[x] for x in users.keys()]
 
