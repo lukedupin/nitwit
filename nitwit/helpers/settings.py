@@ -9,6 +9,8 @@ NAMESPACE = 'nitwit'
 CONF = [
     ('directory',       'examples', util.xstr),
     ('defaultcategory', 'pending', util.xstr),
+    ('subscribecategories', 'in_progress', lambda x: util.xstr(x).split(',')),
+    ('subscribetags', 'bug,crash', lambda x: util.xstr(x).split(',')),
 ]
 CATEGORIES = [
     'pending',
@@ -16,6 +18,11 @@ CATEGORIES = [
     'testing',
     'completed',
     'trash'
+]
+TAGS = [
+    'bug',
+    'crash',
+    'feature',
 ]
 
 def find_git_dir():

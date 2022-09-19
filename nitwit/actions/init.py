@@ -1,4 +1,4 @@
-from nitwit.storage import categories
+from nitwit.storage import categories, tags
 from nitwit.helpers import util, settings
 
 import random, os, git
@@ -15,6 +15,10 @@ def handle_init( parser, options, args ):
     # Setup the default categories
     cats = [categories.Category( None, cat ) for cat in settings.CATEGORIES]
     categories.export_categories( conf, cats )
+
+    # Setup the default categories
+    ts = [tags.Tag( None, tag ) for tag in settings.TAGS]
+    tags.export_tags( settings, ts )
 
     return None
 
