@@ -69,9 +69,9 @@ def parse_tag( handle, name ):
 # Write out a spring file
 def export_tag( handle, tag ):
     if tag.title is not None:
-        handle.write(f'# {tag.title}\r\n')
-        handle.write('\r\n')
+        handle.write(f'# {tag.title}\n')
+        handle.write('\n')
 
     # Write out the user's notes
     for note in tag.notes:
-        handle.write(f'{note}\r\n')
+        handle.write(f'{note}\n')

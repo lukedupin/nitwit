@@ -136,37 +136,37 @@ def parse_ticket( settings, handle, uid=None, category=None ):
 
 # Pass in an open filehandle and we'll generate a ticket
 def export_ticket( handle, ticket, include_uid=False ):
-    handle.write(f'# {ticket.title}\r\n\r\n')
+    handle.write(f'# {ticket.title}\n\n')
 
     # Write out the configuration options
     ret = None
     if include_uid:
-        ret = handle.write(f'> ${ticket.uid}\r\n')
+        ret = handle.write(f'> ${ticket.uid}\n')
     if ticket.category is not None:
-        ret = handle.write(f'> ^{ticket.category}\r\n')
+        ret = handle.write(f'> ^{ticket.category}\n')
     if len(ticket.owners) > 0:
-        ret = handle.write(f'> @{" @".join(ticket.owners)}\r\n')
+        ret = handle.write(f'> @{" @".join(ticket.owners)}\n')
     if len(ticket.tags) > 0:
-        ret = handle.write(f'> #{" #".join(ticket.tags)}\r\n')
+        ret = handle.write(f'> #{" #".join(ticket.tags)}\n')
     if ticket.priority is not None:
-        ret = handle.write(f'> !{util.xint(ticket.priority)}\r\n')
+        ret = handle.write(f'> !{util.xint(ticket.priority)}\n')
     if ret is not None:
-        handle.write('\r\n')
+        handle.write('\n')
 
     # Write out the subitems
     if len(ticket.subitems) > 0:
         for si in ticket.subitems:
             if si.active:
-                handle.write(f'1. {si.name}\r\n')
+                handle.write(f'1. {si.name}\n')
             else:
-                handle.write(f'1. ~~{si.name}~~\r\n')
+                handle.write(f'1. ~~{si.name}~~\n')
 
             for note in si.notes:
-                handle.write(f'{note}\r\n')
-        handle.write("\r\n")
+                handle.write(f'{note}\n')
+        handle.write("\n")
 
     # Write out the user's notes
     if len(ticket.notes) > 0:
         for note in ticket.notes:
-            handle.write(f'{note}\r\n')
-        handle.write("\r\n")
+            handle.write(f'{note}\n')
+        handle.write("\n")

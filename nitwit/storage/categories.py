@@ -70,9 +70,9 @@ def parse_category( handle, name ):
 # Write out a spring file
 def export_category( handle, category ):
     if category.title is not None:
-        handle.write(f'# {category.title}\r\n')
-        handle.write('\r\n')
+        handle.write(f'# {category.title}\n')
+        handle.write('\n')
 
     # Write out the user's notes
     for note in category.notes:
-        handle.write(f'{note}\r\n')
+        handle.write(f'{note}\n')

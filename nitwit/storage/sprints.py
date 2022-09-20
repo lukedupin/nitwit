@@ -102,6 +102,10 @@ def parse_sprint( handle, date, owner ):
         if re.search(r'^======', line) is not None:
             break
 
+        # Auto break processing
+        if re.search(r'^####', line) is not None:
+            return None
+
         # Store the title!
         if (ret := re.search(r'^# @([0-9a-zA-Z]+)[ ]*(.*)', line)) is not None:
             sprint.owner = ret.group(1)
@@ -121,24 +125,24 @@ def parse_sprint( handle, date, owner ):
 # Write out a spring file
 def export_sprint( handle, sprint, title_lookup={} ):
     if sprint.title is not None:
-        handle.write(f'# {sprint.owner} {sprint.title[:64]}\r\n')
+        handle.write(f'# {sprint.owner} {sprint.title[:64]}\n')
     else:
-        handle.write(f'# @{sprint.owner}\r\n')
-    handle.write('\r\n')
+        handle.write(f'# @{sprint.owner}\n')
+    handle.write('\n')
 
     # Write out the subitems
     if len(sprint.ticket_uids) > 0:
         for uid in sprint.ticket_uids:
             if (title := title_lookup.get(uid)) is not None:
-                handle.write(f'+ ${uid} {title[:64]}\r\n')
+                handle.write(f'+ ${uid} {title[:64]}\n')
             else:
-                handle.write(f'+ ${uid}\r\n')
-        handle.write("\r\n")
+                handle.write(f'+ ${uid}\n')
+        handle.write("\n")
 
     else:
-        handle.write("+ \r\n")
-        handle.write("\r\n")
+        handle.write("+ \n")
+        handle.write("\n")
 
     # Write out the user's notes
     for note in sprint.notes:
-        handle.write(f'{note}\r\n')
+        handle.write(f'{note}\n')

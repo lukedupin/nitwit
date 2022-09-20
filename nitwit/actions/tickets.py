@@ -7,7 +7,7 @@ import random, os
 def handle_ticket( parser, options, args, settings ):
     # Print out the categories
     if len(args) < 2:
-        tickets = tickets_mod.import_tickets( settings['directory'] )
+        tickets = tickets_mod.import_tickets( settings )
         if len(tickets) <= 0:
             print( "No tickets found. Try creating one." )
 

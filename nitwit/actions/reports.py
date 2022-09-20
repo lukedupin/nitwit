@@ -39,7 +39,7 @@ def handle_gen( parser, options, args, settings ):
 
         # Export the ticket data into the files
         tickets_mod.export_ticket( handles[ticket.category], ticket, include_uid=True )
-        handles[ticket.category].write("======\r\n\r\n")
+        handles[ticket.category].write("======\n\n")
 
     # Organize the springs
     ticket_hits = {}
@@ -59,7 +59,7 @@ def handle_gen( parser, options, args, settings ):
                 ticket_hits[uid] = True
 
             sprints_mod.export_sprint( handle, sprint, title_lookup )
-            handle.write("======\r\n\r\n")
+            handle.write("======\n\n")
 
         # One last pass to add any users that aren't in the commit log, but have sprints
         for sprint in sprints:
@@ -68,19 +68,19 @@ def handle_gen( parser, options, args, settings ):
                     ticket_hits[uid] = True
 
                 sprints_mod.export_sprint(handle, sprint, title_lookup)
-                handle.write("======\r\n\r\n")
+                handle.write("======\n\n")
 
-        handle.write("# Tickets\r\n\r\n")
+        handle.write("#### END SPRINT\n\n")
 
         # Dump all the tickets in the sprintcategories git variable
         for cat in settings['sprintcategories']:
-            handle.write(f'## {cat}\r\n\r\n')
+            handle.write(f'## {cat}\n\n')
 
             for ticket in tickets:
                 if ticket.category == cat and ticket.uid not in ticket_hits:
-                    handle.write(f'+ ${ticket.uid} {ticket.title[:64]}\r\n')
+                    handle.write(f'+ ${ticket.uid} {ticket.title[:64]}\n')
 
-            handle.write("\r\n")
+            handle.write("\n")
 
         handles['sprints'] = handle
 
@@ -117,6 +117,17 @@ def handle_consume( parser, options, args, settings ):
     print( f"Consumed {update_count} updated tickets")
     print( f"{len(tickets)} total tickets")
     print()
+
+    sprints = []
+
+    # Read in the sprint
+    with open(f'{settings["directory"]}/sprints.md') as handle:
+        # Loop while we have data to read
+        while not util.is_eof(handle):
+            if (sprint := sprints_mod.parse_sprint( handle, None, None )) is None:
+                break
+
+            sprints.append( sprint )
 
     return handle_gen( parser, options, args, settings )
 
