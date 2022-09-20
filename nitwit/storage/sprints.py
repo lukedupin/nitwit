@@ -22,13 +22,9 @@ def get_latest_sprint_date( settings ):
     latest_dir = None
     latest_unix = None
 
-    print("loading?")
-
     # Read in all the sprints
     for dir in glob.glob(f'{settings["directory"]}/_sprints/**'):
         info = re.split('/', dir)
-        print(dir)
-        print(info[-1])
         unix = util.timeToUnix( datetime.strptime( info[-1], '%Y-%m-%d'))
         if util.xint( latest_unix) < unix:
             latest_dir = dir
@@ -60,10 +56,8 @@ def import_latest_sprints( settings, filter_owners=None ):
 
     # Is there no directory?
     if (latest_dir := get_latest_sprint_date( settings )) is None:
-        print("Missed load")
         return sprints
 
-    print(latest_dir)
     # Read in all the sprints
     for file in glob.glob(f'{latest_dir}/**.md', recursive=True):
         info = re.split('/', file)
@@ -75,7 +69,6 @@ def import_latest_sprints( settings, filter_owners=None ):
 
             if (sprint := parse_sprint( handle, date, owner )) is not None:
                 sprints.append( sprint )
-            print(f"Got sprint {sprint}")
 
     return sprints
 
