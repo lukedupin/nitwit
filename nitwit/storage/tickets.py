@@ -92,9 +92,7 @@ def export_tickets( settings, tickets ):
 
 # Pass in an open filehandle and we'll generate a ticket
 def parse_ticket( settings, handle, uid=None, category=None ):
-    if category is None:
-        category = settings['defaultcategory']
-    ticket = Ticket( handle.name, uid, category )
+    ticket = Ticket( handle.name, uid, safe_category( category, settings ))
 
     # Load up the files and go!
     first_line = True
@@ -139,7 +137,7 @@ def parse_ticket( settings, handle, uid=None, category=None ):
                 if mod[0] == '$' and ticket.uid is None:
                     ticket.uid = mod[1:]
 
-                elif mod[0] == '^':
+                elif mod[0] == '^' and category is None:
                     ticket.category = safe_category( mod[1:], settings )
                 elif mod[0] == '!':
                     ticket.priority = util.xint( mod[1:] )

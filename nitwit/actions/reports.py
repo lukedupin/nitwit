@@ -92,15 +92,16 @@ def handle_gen( parser, options, args, settings ):
 
 
 def handle_consume( parser, options, args, settings ):
+    categories = categories_mod.import_categories( settings )
+
     tickets = []
 
     # Read in all the tickets
-    for file in glob.glob(f'{settings["directory"]}/*.md'):
-        cat = re.sub('[.]md$', '', file.split('/')[-1] )
-        with open(file) as handle:
+    for category in categories:
+        with open(f'{settings["directory"]}/{category.name}.md') as handle:
             # Loop while we have data to read
             while not util.is_eof( handle ):
-                if (ticket := tickets_mod.parse_ticket( settings, handle, category=cat )) is None:
+                if (ticket := tickets_mod.parse_ticket( settings, handle, category=category.name )) is None:
                     break
 
                 tickets.append( ticket )
