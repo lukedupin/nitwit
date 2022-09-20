@@ -9,6 +9,7 @@ from nitwit.helpers.settings import load_settings
 # Configure the usage
 usage = "usage: %command [options] arg"
 parser = OptionParser(usage)
+parser.add_option("-c", "--create", dest="create", help="Create a new item")
 parser.add_option("-f", "--file", dest="filename", help="read data from FILENAME")
 parser.add_option("-v", "--verbose", action="store_true", dest="verbose")
 parser.add_option("-q", "--quiet", action="store_false", dest="verbose")
@@ -51,6 +52,7 @@ else:
 
 ## Errors
 if err is not None:
+    parser.print_help()
     parser.error(f'''Invalid args, review the info
 
 {err}
