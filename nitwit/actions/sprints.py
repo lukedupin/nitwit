@@ -16,14 +16,15 @@ def handle_sprints( parser, options, args, settings ):
 
         # Dump the sprints to the screen
         print("My active tickets")
-        for uid in sprints[0].ticket_uids:
+        for idx, uid in enumerate(sprints[0].ticket_uids):
             title = ""
             cat = ""
             if (ticket := tickets.get(uid)) is not None:
                 title = ticket.title
                 cat = f'^{ticket.category}'
 
-            print(f'    ${uid}  {cat.ljust(16)} {title[:64]}')
+            header = f"{str(idx+1)}."
+            print(f'{header.ljust(4)}${uid}  {cat.ljust(16)} {title[:64]}')
 
         return None
 
@@ -31,7 +32,7 @@ def handle_sprints( parser, options, args, settings ):
     sprint_name = args[1].lower()
 
     # Either creator or edit a sprint
-    sprints = sprints_mod.import_sprints( settings, filter_names=[sprint_name] )
+    sprints = sprints_mod.import_sprints( settings, filter_owners=[sprint_name] )
     if len(sprints) <= 0:
         sprint = sprints_mod.Sprint( None, sprint_name )
         sprint.title = sprint.name.capitalize()
