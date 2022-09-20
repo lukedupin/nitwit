@@ -2,7 +2,7 @@
 
 from optparse import OptionParser
 
-from nitwit.actions import reports, tags, categories, tickets, init
+from nitwit.actions import reports, tags, categories, tickets, init, sprints
 from nitwit.helpers.settings import load_settings
 
 
@@ -46,6 +46,10 @@ elif args[0] == 'tag':
 ## Categories
 elif args[0] == 'category':
     err = categories.handle_category(parser, options, args, settings)
+
+## Sprint
+elif args[0] == 'sprint':
+    err = sprints.handle_sprints(parser, options, args, settings)
 
 else:
     err = "Unknown command"
