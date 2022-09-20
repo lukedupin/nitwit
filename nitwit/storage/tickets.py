@@ -26,6 +26,22 @@ class SubItem:
         self.notes = []
 
 
+def safe_category( category, settings ):
+    if util.xstr(category) in ('', 'sprints', 'tags', 'categories'):
+        return settings['defaultcategory']
+
+    return category
+
+
+def generate_uid( base_dir ):
+    for _ in range(32):
+        uid = hex(random.randint(0, 1048576) & 0xFFFFF)[2:].rjust(5, '0')
+        if not os.path.exists(f'{base_dir}/{uid}'):
+            return uid
+
+    return None
+
+
 ### Bulk commands for parsing and writing to the filesystem
 
 # Parse all tickets
@@ -62,7 +78,7 @@ def export_tickets( settings, tickets ):
         # Hash before we write
         before = util.sha256sum( filename )
         with open(f"{dir}/meta.md", 'w') as handle:
-            export_ticket( handle, ticket )
+            export_ticket( handle, ticket, settings )
 
         # Check if anything changed
         if before != util.sha256sum( filename ):
@@ -73,14 +89,6 @@ def export_tickets( settings, tickets ):
 
 ### Individual parse/export commands
 
-def generate_uid( base_dir ):
-    for _ in range(32):
-        uid = hex(random.randint(0, 1048576) & 0xFFFFF)[2:]
-        if not os.path.exists(f'{base_dir}/{uid}'):
-            return uid
-
-    return None
-
 
 # Pass in an open filehandle and we'll generate a ticket
 def parse_ticket( settings, handle, uid=None, category=None ):
@@ -89,24 +97,37 @@ def parse_ticket( settings, handle, uid=None, category=None ):
     ticket = Ticket( handle.name, uid, category )
 
     # Load up the files and go!
-    last_pos = handle.tell()
-    while (line := handle.readline()) is not None and \
-          (new_last_pos := handle.tell()) != last_pos:
+    first_line = True
+    new_last_pos = handle.tell()
+    while True:
+        # Create a line, and quit if the line didn't read correctly
         last_pos = new_last_pos
+        if (line := handle.readline()) is None or \
+           (new_last_pos := handle.tell()) == last_pos:
+            break
 
         # Strip out the line
         line = line.rstrip()
 
-        # Did we reach the end of a multi read ticket?
-        if re.search(r'^======', line) is not None:
-            break
+        # Quit now, if this is the first line, give no chance to read again
+        if re.search(r'^####', line) is not None:
+            handle.seek(last_pos)
+            if first_line:
+                return None
+            else:
+                break
+        first_line = False
 
         # Store a new ticket?
-        if ticket.title is None and (ret := re.search(r'^\w*# (.*$)', line)) is not None:
+        if (ret := re.search(r'^\s*# (.*$)', line)) is not None:
+            if ticket.title is not None:
+                handle.seek(last_pos)
+                break
+
             ticket.title = ret.group(1)
 
         # Setup the sub topics, they are numbers
-        elif (ret := re.search(r'^\w*[0-9]+[.][\t ]+(.*)$', line)):
+        elif (ret := re.search(r'^\s*[0-9]+[.][\s]+(.*)$', line)):
             ticket.subitems.append( SubItem( ret.group(1)))
 
         # Find an account modifier
@@ -119,7 +140,7 @@ def parse_ticket( settings, handle, uid=None, category=None ):
                     ticket.uid = mod[1:]
 
                 elif mod[0] == '^':
-                    ticket.category = mod[1:]
+                    ticket.category = safe_category( mod[1:], settings )
                 elif mod[0] == '!':
                     ticket.priority = util.xint( mod[1:] )
                 elif mod[0] == '@':
@@ -128,14 +149,14 @@ def parse_ticket( settings, handle, uid=None, category=None ):
                     ticket.tags.append( mod[1:] )
 
         # Add in all the chatter
-        elif re.search(r'^\w*$', line) is None:
+        elif re.search(r'^\s*$', line) is None:
             ticket.notes.append( line )
 
     return ticket if ticket.title is not None else None
 
 
 # Pass in an open filehandle and we'll generate a ticket
-def export_ticket( handle, ticket, include_uid=False ):
+def export_ticket( handle, ticket, settings, include_uid=False ):
     handle.write(f'# {ticket.title}\n\n')
 
     # Write out the configuration options
@@ -143,7 +164,7 @@ def export_ticket( handle, ticket, include_uid=False ):
     if include_uid:
         ret = handle.write(f'> ${ticket.uid}\n')
     if ticket.category is not None:
-        ret = handle.write(f'> ^{ticket.category}\n')
+        ret = handle.write(f'> ^{safe_category( ticket.category, settings )}\n')
     if len(ticket.owners) > 0:
         ret = handle.write(f'> @{" @".join(ticket.owners)}\n')
     if len(ticket.tags) > 0:

@@ -22,12 +22,16 @@ def get_latest_sprint_date( settings ):
     latest_dir = None
     latest_unix = None
 
+    print("loading?")
+
     # Read in all the sprints
-    for file in glob.glob(f'{settings["directory"]}_sprints/**/'):
-        info = re.split('/', file)
-        unix = util.timeToUnix( datetime.strptime( info[-2], '%Y-%m-%d'))
+    for dir in glob.glob(f'{settings["directory"]}/_sprints/**'):
+        info = re.split('/', dir)
+        print(dir)
+        print(info[-1])
+        unix = util.timeToUnix( datetime.strptime( info[-1], '%Y-%m-%d'))
         if util.xint( latest_unix) < unix:
-            latest_dir = '/'.join( info[0:-1])
+            latest_dir = dir
             latest_unix = unix
 
     return latest_dir
@@ -56,8 +60,10 @@ def import_latest_sprints( settings, filter_owners=None ):
 
     # Is there no directory?
     if (latest_dir := get_latest_sprint_date( settings )) is None:
+        print("Missed load")
         return sprints
 
+    print(latest_dir)
     # Read in all the sprints
     for file in glob.glob(f'{latest_dir}/**.md', recursive=True):
         info = re.split('/', file)
@@ -69,17 +75,20 @@ def import_latest_sprints( settings, filter_owners=None ):
 
             if (sprint := parse_sprint( handle, date, owner )) is not None:
                 sprints.append( sprint )
+            print(f"Got sprint {sprint}")
 
     return sprints
 
 
 # Export all sprints
 def export_sprints( settings, sprints ):
-    for sprint in sprints:
-        dir = f"{settings['directory']}/{sprint.date}"
-        Path(dir).mkdir(parents=True, exist_ok=True)
+    if (latest_dir := get_latest_sprint_date( settings )) is None:
+        latest_dir = f'{settings["directory"]}/_sprints/{util.dateToStr()}'
 
-        with open(f"{dir}/{sprint.owner}.md", 'w') as handle:
+    for sprint in sprints:
+        Path(latest_dir).mkdir(parents=True, exist_ok=True)
+
+        with open(f"{latest_dir}/{sprint.owner}.md", 'w') as handle:
             export_sprint( handle, sprint )
 
 
@@ -90,34 +99,43 @@ def parse_sprint( handle, date, owner ):
     sprint = Sprint( date, owner )
 
     # Load up the files and go!
-    last_pos = handle.tell()
-    while (line := handle.readline()) is not None and \
-            (new_last_pos := handle.tell()) != last_pos:
+    first_line = True
+    new_last_pos = handle.tell()
+    while True:
+        # Create a line, and quit if the line didn't read correctly
         last_pos = new_last_pos
+        if (line := handle.readline()) is None or \
+           (new_last_pos := handle.tell()) == last_pos:
+            break
 
         # Strip out the line
         line = line.rstrip()
 
-        # Did we reach the end of a multi read ticket?
-        if re.search(r'^======', line) is not None:
-            break
-
-        # Auto break processing
+        # Quit now, if this is the first line, give no chance to read again
         if re.search(r'^####', line) is not None:
-            return None
+            handle.seek(last_pos)
+            if first_line:
+                return None
+            else:
+                break
+        first_line = False
 
         # Store the title!
-        if (ret := re.search(r'^# @([0-9a-zA-Z]+)[ ]*(.*)', line)) is not None:
+        if (ret := re.search(r'^# @([0-9a-zA-Z]+)\s*(.*)', line)) is not None:
+            if sprint.owner is not None and sprint.owner != ret.group(1):
+                handle.seek( last_pos )
+                break
+
             sprint.owner = ret.group(1)
             sprint.title = ret.group(2)
 
         # Setup the sub topics
-        elif (ret := re.search(r'^\w*[*+-][\t ]+[$](.*)$', line)):
+        elif (ret := re.search(r'^\s*[*+-]\s+[$]([^\s]+)', line)):
             sprint.ticket_uids.append( ret.group(1).lower())
 
         # Add in all the chatter
-        elif re.search(r'^\w*$', line) is None:
-            sprint.notes.append( line )
+        #elif re.search(r'^\s*$', line) is None:
+        #    sprint.notes.append( line )
 
     return sprint if sprint.owner is not None else None
 
@@ -140,9 +158,8 @@ def export_sprint( handle, sprint, title_lookup={} ):
         handle.write("\n")
 
     else:
-        handle.write("+ \n")
-        handle.write("\n")
+        handle.write("+ \n\n")
 
     # Write out the user's notes
-    for note in sprint.notes:
-        handle.write(f'{note}\n')
+    #for note in sprint.notes:
+    #    handle.write(f'{note}\n')

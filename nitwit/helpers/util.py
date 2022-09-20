@@ -298,10 +298,10 @@ def daysToUnix( days ):
 
 
 # convert date to string readable
-def dateToStr( date ):
+def dateToStr( date=None ):
     if date is None:
-        return "0-0-0"
-    return "%d-%d-%d" % (date.month, date.day, date.year)
+        date = timeNow()
+    return f"{str(date.year).rjust(4, '0')}-{str(date.month).rjust(2, '0')}-{str(date.day).rjust(2, '0')}"
 
 
 # Current time in epoch format

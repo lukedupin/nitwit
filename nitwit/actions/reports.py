@@ -38,8 +38,7 @@ def handle_gen( parser, options, args, settings ):
             handles[ticket.category] = open(f"{settings['directory']}/{ticket.category}.md", 'w')
 
         # Export the ticket data into the files
-        tickets_mod.export_ticket( handles[ticket.category], ticket, include_uid=True )
-        handles[ticket.category].write("======\n\n")
+        tickets_mod.export_ticket( handles[ticket.category], ticket, settings, include_uid=True )
 
     # Organize the springs
     ticket_hits = {}
@@ -59,7 +58,6 @@ def handle_gen( parser, options, args, settings ):
                 ticket_hits[uid] = True
 
             sprints_mod.export_sprint( handle, sprint, title_lookup )
-            handle.write("======\n\n")
 
         # One last pass to add any users that aren't in the commit log, but have sprints
         for sprint in sprints:
@@ -68,7 +66,6 @@ def handle_gen( parser, options, args, settings ):
                     ticket_hits[uid] = True
 
                 sprints_mod.export_sprint(handle, sprint, title_lookup)
-                handle.write("======\n\n")
 
         handle.write("#### END SPRINT\n\n")
 
@@ -81,8 +78,6 @@ def handle_gen( parser, options, args, settings ):
                     handle.write(f'+ ${ticket.uid} {ticket.title[:64]}\n')
 
             handle.write("\n")
-
-        handles['sprints'] = handle
 
     if len(handles) <= 0:
         return "No reports found. Please create categories or tickets."
@@ -128,6 +123,9 @@ def handle_consume( parser, options, args, settings ):
                 break
 
             sprints.append( sprint )
+
+    # Export all sprints
+    sprints_mod.export_sprints( settings, sprints )
 
     return handle_gen( parser, options, args, settings )
 
