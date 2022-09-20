@@ -98,13 +98,17 @@ def handle_consume( parser, options, args, settings ):
 
     # Read in all the tickets
     for category in categories:
-        with open(f'{settings["directory"]}/{category.name}.md') as handle:
-            # Loop while we have data to read
-            while not util.is_eof( handle ):
-                if (ticket := tickets_mod.parse_ticket( settings, handle, category=category.name )) is None:
-                    break
+        try:
+            with open(f'{settings["directory"]}/{category.name}.md') as handle:
+                # Loop while we have data to read
+                while not util.is_eof( handle ):
+                    if (ticket := tickets_mod.parse_ticket( settings, handle, category=category.name )) is None:
+                        break
 
-                tickets.append( ticket )
+                    tickets.append( ticket )
+
+        except FileNotFoundError:
+            continue
 
     # Export all tickets processed from the report
     new_count, update_count = tickets_mod.export_tickets( settings, tickets )

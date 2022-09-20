@@ -39,10 +39,11 @@
 + $92d26 Fix badge logic button
 + $f4b17 Tenant registration button
 
-# @lukedupin
+# A completely dead and horrible ticket
 
 > $8670b
 > ^trash
+> #bug #crash
 
 +
 

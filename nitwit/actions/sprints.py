@@ -41,4 +41,5 @@ def handle_sprints( parser, options, args, settings ):
     else:
         os.system(f'{os.environ["EDITOR"]} {sprints[0].filename}')
 
+
     return None
