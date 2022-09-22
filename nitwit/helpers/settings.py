@@ -9,14 +9,14 @@ NAMESPACE = 'nitwit'
 CONF = [
     ('directory',           'examples', util.xstr),
     ('defaultcategory',     'pending', util.xstr),
-    ('subscribecategories', 'in_progress', lambda x: util.xstr(x).split(',')),
+    ('subscribecategories', 'accepted', lambda x: util.xstr(x).split(',')),
     ('subscribetags',       'bug,crash', lambda x: util.xstr(x).split(',')),
-    ('sprintcategories',    'pending,in_progress,testing', lambda x: util.xstr(x).split(',')),
+    ('sprintcategories',    'pending,accepted,testing', lambda x: util.xstr(x).split(',')),
     ('hiddencategories',    'trash,completed', lambda x: util.xstr(x).split(',')),
 ]
 CATEGORIES = [
     'pending',
-    'in_progress',
+    'accepted',
     'testing',
     'completed',
     'trash'
