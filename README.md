@@ -86,3 +86,24 @@ Created category #phish
 nw category phish
 Created category #phish
 ```
+
+### tag - list, create, edit your tags
+
+```
+# List out tags
+nw tag
+Tags
+    #bugs
+    #features
+    #ui_overhaul
+
+# Create a tag
+nw tag on_boarding
+Created tag #on_boarding
+
+# Edit a tag
+nw tag on_boarding
+# Opens editor of on_boarding
+```
+
+### sprint - list tickets, list sprints, edit your sprint, edit all sprints
