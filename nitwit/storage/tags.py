@@ -59,6 +59,15 @@ def parse_tag( handle, name ):
            (ret := re.search(r'^# (.*$)', line)) is not None:
             tag.title = ret.group(1)
 
+        # Find an account modifier
+        elif re.search(r'^>', line):
+            for mod in re.split(' ', line):
+                if len(mod) <= 1:
+                    continue
+
+                if mod[0] == '#' and name is None:
+                    tag.name = name = mod[1:]
+
         # Add in all the chatter
         else:
             tag.notes.append( line )
@@ -67,9 +76,15 @@ def parse_tag( handle, name ):
 
 
 # Write out a spring file
-def export_tag( handle, tag ):
+def export_tag( handle, tag, include_name=False ):
     if tag.title is not None:
         handle.write(f'# {tag.title}\n')
+    else:
+        handle.write(f'# {tag.name.capitalize()}\n')
+    handle.write('\n')
+
+    if include_name:
+        handle.write(f'> #{tag.name}\n')
         handle.write('\n')
 
     # Write out the user's notes

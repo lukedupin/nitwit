@@ -5,59 +5,54 @@ from optparse import OptionParser
 from nitwit.actions import reports, tags, categories, tickets, init, sprints
 from nitwit.helpers.settings import load_settings
 
+import sys, os
 
-# Configure the usage
-usage = "usage: %command [options] arg"
-parser = OptionParser(usage)
-parser.add_option("-c", "--create", dest="create", help="Create a new item")
-parser.add_option("-f", "--file", dest="filename", help="read data from FILENAME")
-parser.add_option("-v", "--verbose", action="store_true", dest="verbose")
-parser.add_option("-q", "--quiet", action="store_false", dest="verbose")
 
-(options, args) = parser.parse_args()
+parser = None
+options = None
 
 # Load the git/config settings file
 if (settings := load_settings()) is None:
     parser.error("Please only run inside of a git repo")
 
-if len(args) < 1:
+if len(sys.argv) < 2:
     parser.error("Couldn't find a valid git repo")
 
 err = None
 
 ## Installation / Setup
-if args[0] == 'init':
-    err = init.handle_init(parser, options, args)
+if sys.argv[1] == 'init':
+    err = init.handle_init(parser, options, sys.argv)
 
 ## Reports
-elif args[0] == 'gen':
-    err = reports.handle_gen(parser, options, args, settings)
-elif args[0] == 'consume':
-    err = reports.handle_consume(parser, options, args, settings)
+elif sys.argv[1] == 'gen':
+    err = reports.handle_gen(parser, options, sys.argv, settings)
+elif sys.argv[1] == 'consume':
+    err = reports.handle_consume(parser, options, sys.argv, settings)
 
 ## Tickets
-elif args[0] == 'ticket':
-    err = tickets.handle_ticket( parser, options, args, settings )
+elif sys.argv[1] == 'ticket':
+    err = tickets.handle_ticket( parser, options, sys.argv, settings )
 
 ## Tags
-elif args[0] == 'tag':
-    err = tags.handle_tag(parser, options, args, settings)
+elif sys.argv[1] == 'tag':
+    err = tags.handle_tag(settings)
 
 ## Categories
-elif args[0] == 'category':
-    err = categories.handle_category(parser, options, args, settings)
+elif sys.argv[1] == 'category':
+    err = categories.handle_category(parser, options, sys.argv, settings)
 
 ## Sprint
-elif args[0] == 'sprint':
-    err = sprints.handle_sprints(parser, options, args, settings)
+elif sys.argv[1] == 'sprint':
+    err = sprints.handle_sprints(parser, options, sys.argv, settings)
 
 else:
     err = "Unknown command"
 
 ## Errors
 if err is not None:
-    parser.print_help()
-    parser.error(f'''Invalid args, review the info
-
-{err}
-''')
+    print(err)
+    #parser.print_help()
+    #parser.error(f'''Invalid argv, review the info
+#{err}
+#''')
