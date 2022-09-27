@@ -17,12 +17,32 @@ class Tag:
 
 ### Bulk commands for parsing and writing to the filesystem
 
+
+def find_tag_by_name( settings, name ):
+    # Fastest, look for a specific one
+    tags = import_tags( settings, filter_names=[util.xstr(name)] )
+    if len(tags) == 1:
+        return tags[0]
+
+    # Attempt an index lookup
+    idx = util.xint(name) - 1
+    if idx < 0:
+        return None
+
+    # Slower, pulling in all tags and picking by index after sorting
+    tags = sorted( import_tags( settings ), key=lambda x: x.name )
+    if idx < len(tags):
+        return tags[idx]
+
+    return None
+
+
 # Parse all tags
 def import_tags( settings, filter_names=None ):
     tags = []
 
     # Read in all the tags
-    for file in glob.glob(f'{settings["directory"]}/_tags/**.md', recursive=True):
+    for file in glob.glob(f'{settings["directory"]}/tags/**.md', recursive=True):
         info = re.split('/', file)
         name = re.sub( r'[.]md$', '', info[-1].lower() )
         if filter_names is not None and name not in filter_names:
@@ -32,13 +52,13 @@ def import_tags( settings, filter_names=None ):
             if (tag := parse_tag( handle, name )) is not None:
                 tags.append( tag )
 
-    return tags
+    return sorted( tags, key=lambda x: x.name.lower() )
 
 
-# Export all sprints
+# Export all tags
 def export_tags( settings, tags ):
     for tag in tags:
-        dir = f'{settings["directory"]}/_tags'
+        dir = f'{settings["directory"]}/tags'
         Path(dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{dir}/{tag.name}.md", 'w') as handle:

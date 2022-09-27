@@ -60,8 +60,6 @@ def parse_content( handle ):
         # Strip out the line
         line = line.rstrip()
 
-        print( line )
-
         # Quit now, if this is the first line, give no chance to read again
         if re.search(r'^======', line) is not None:
             break
