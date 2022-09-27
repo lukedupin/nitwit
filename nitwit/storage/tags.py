@@ -3,13 +3,14 @@ import os, sys, re, glob
 from pathlib import Path
 from datetime import datetime
 
+from nitwit.storage.parser import parse_content
 from nitwit.helpers import util
 
 
 class Tag:
-    def __init__(self, filename, name):
-        self.filename = filename
-        self.name = name
+    def __init__(self):
+        self.filename = None
+        self.name = None
         self.title = None
         self.notes = []
 
@@ -47,30 +48,25 @@ def export_tags( settings, tags ):
 ### Individual parse/export commands
 
 # Parse tags
-def parse_tag( handle, name ):
-    tag = Tag( handle.name, name )
+def parse_tag( handle, name=None ):
+    if (parser := parse_content( handle )) is None and name is None:
+        return None
 
-    # Load up the files and go!
-    for idx, line in enumerate( handle.readlines()):
-        line = line.rstrip()
+    tag = Tag()
+    tag.filename = handle.name
+    tag.notes = parser.notes
 
-        # Store the title!
-        if idx == 0 and tag.title is None and \
-           (ret := re.search(r'^# (.*$)', line)) is not None:
-            tag.title = ret.group(1)
+    # Store the name
+    tag.name = name
+    if name is None and len(parser.tags) > 0:
+        tag.name = parser.tags[0]
+    if tag.name is None:
+        return None
 
-        # Find an account modifier
-        elif re.search(r'^>', line):
-            for mod in re.split(' ', line):
-                if len(mod) <= 1:
-                    continue
-
-                if mod[0] == '#' and name is None:
-                    tag.name = name = mod[1:]
-
-        # Add in all the chatter
-        else:
-            tag.notes.append( line )
+    if parser.title is not None:
+        tag.title = parser.title
+    else:
+        tag.title = util.xstr(tag.name).capitalize()
 
     return tag
 

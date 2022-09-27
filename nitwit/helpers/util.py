@@ -422,3 +422,12 @@ def sha256sum(filename):
         while n := f.readinto(mv):
             h.update(mv[:n])
     return h.hexdigest()
+
+
+def editFile(filename):
+    editor = 'vim'
+    for key in ['EDITOR', 'NW_EDITOR']:
+        if key in os.environ:
+            editor = os.environ[key]
+
+    return os.system(f'{editor} {filename}')

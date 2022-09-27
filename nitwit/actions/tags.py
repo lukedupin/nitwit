@@ -58,11 +58,11 @@ def process_all( settings ):
     filename = f"{settings['directory']}/tags.md"
     with open(filename, "w") as handle:
         for tag in tags:
-            print(tag.name)
             tags_mod.export_tag( handle, tag, include_name=True )
+            handle.write("======\n\n")
 
     # Start the editor
-    os.system(f'{os.environ["EDITOR"]} {filename}')
+    util.editFile( filename )
 
     # Wrapp up by parsing
     tags = []
@@ -73,12 +73,12 @@ def process_all( settings ):
                 if (tag := tags_mod.parse_tag(handle, None)) is None:
                     break
 
-                if tag.name is None:
-                    return f"Error in tag: {tag.title}"
                 tags.append( tag )
 
     except FileNotFoundError:
         return None
+
+    print([x.title for x in tags])
 
     # Finallly output the updated tags
     os.remove(filename)
