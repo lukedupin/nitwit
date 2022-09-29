@@ -11,21 +11,23 @@ class Parser:
         self.uid = None
         self.title = None
         self.category = None
-        self.priority = None
+        self.date = None
         self.owners = []
         self.tags = []
         self.subitems = []
         self.notes = []
+        self.variables = {}
 
     def has_content(self):
         return self.uid is not None or \
                self.title is not None or \
                self.category is not None or \
-               self.priority is not None or \
+               self.date is not None or \
                len(self.owners) > 0 or \
                len(self.tags) > 0 or \
                len(self.subitems) > 0 or \
-               len(self.notes) > 0
+               len(self.notes) > 0 or \
+               len(self.variables) > 0
 
 
 class SubItem:
@@ -60,11 +62,11 @@ def parse_content( handle ):
         # Strip out the line
         line = line.rstrip()
 
-        # Quit now, if this is the first line, give no chance to read again
+        # Ignore this
         if re.search(r'^======', line) is not None:
-            break
+            continue
 
-        # Store a new ticket?
+        # Title?
         if (ret := re.search(r'^\s*# (.*$)', line)) is not None:
             if result.has_content():
                 handle.seek(last_pos)
@@ -82,17 +84,19 @@ def parse_content( handle ):
                 if len(mod) <= 1:
                     continue
 
-                if mod[0] == '$' and result.uid is None:
+                if mod[0] == '!' and result.uid is None:
                     result.uid = mod[1:]
-
+                elif mod[0] == '@':
+                    result.owners.append(mod[1:])
+                elif mod[0] == '#':
+                    result.tags.append(mod[1:])
                 elif mod[0] == '^':
                     result.category = mod[1:]
-                elif mod[0] == '!':
-                    result.priority = util.xint( mod[1:] )
-                elif mod[0] == '@':
-                    result.owners.append( mod[1:] )
-                elif mod[0] == '#':
-                    result.tags.append( mod[1:] )
+                elif mod[0] == '&':
+                    result.date = mod[1:]
+                elif mod[0] == '$' and \
+                     (match := re.search(r'([^=]+)=([^\s]+)', mod[1:])) is not None:
+                        result.variables[match.group(1).lower()] = match.group(2).lower()
 
         # Add in all the chatter
         elif re.search(r'^\s*$', line) is None:

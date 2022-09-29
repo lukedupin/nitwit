@@ -13,6 +13,7 @@ class Tag:
         self.name = None
         self.title = None
         self.notes = []
+        self.hidden = False
 
 
 ### Bulk commands for parsing and writing to the filesystem
@@ -30,7 +31,7 @@ def find_tag_by_name( settings, name ):
         return None
 
     # Slower, pulling in all tags and picking by index after sorting
-    tags = sorted( import_tags( settings ), key=lambda x: x.name )
+    tags = import_tags( settings )
     if idx < len(tags):
         return tags[idx]
 
@@ -75,6 +76,7 @@ def parse_tag( handle, name=None ):
     tag = Tag()
     tag.filename = handle.name
     tag.notes = parser.notes
+    tag.hidden = util.xbool(parser.variables.get('hidden'))
 
     # Store the name
     tag.name = name
@@ -93,14 +95,18 @@ def parse_tag( handle, name=None ):
 
 # Write out a spring file
 def export_tag( handle, tag, include_name=False ):
+    # Write out the title
     if tag.title is not None:
-        handle.write(f'# {tag.title}\n')
+        handle.write(f'# {tag.title}\n\n')
     else:
-        handle.write(f'# {tag.name.capitalize()}\n')
-    handle.write('\n')
+        handle.write(f'# {tag.name.capitalize()}\n\n')
 
-    if include_name:
-        handle.write(f'> #{tag.name}\n')
+    # Write my modifiers
+    if tag.hidden or include_name:
+        if include_name:
+            handle.write(f'> #{tag.name}\n')
+        if tag.hidden:
+            handle.write(f'> $hidden={"true" if tag.hidden else "false"}\n')
         handle.write('\n')
 
     # Write out the user's notes
