@@ -1,5 +1,4 @@
-import os, git
-import re
+import os, git, re, configparser
 
 from nitwit.helpers import util
 
@@ -8,18 +7,15 @@ from nitwit.helpers import util
 NAMESPACE = 'nitwit'
 CONF = [
     ('directory',           'examples', util.xstr),
-    ('defaultcategory',     'pending', util.xstr),
     ('subscribecategories', 'accepted', lambda x: util.xstr(x).split(',')),
     ('subscribetags',       'bug,crash', lambda x: util.xstr(x).split(',')),
-    ('sprintcategories',    'pending,accepted,testing', lambda x: util.xstr(x).split(',')),
-    ('hiddencategories',    'trash,completed', lambda x: util.xstr(x).split(',')),
 ]
 CATEGORIES = [
-    'pending',
-    'accepted',
-    'testing',
-    'completed',
-    'trash'
+    ('pending',     False,  False),
+    ('accepted',    True,   False),
+    ('testing',     True,   False),
+    ('completed',   False,  True),
+    ('trash',       False,  True),
 ]
 TAGS = [
     'bug',
@@ -27,11 +23,17 @@ TAGS = [
     'feature',
 ]
 
+GLOBAL_CONF = [
+    ('defaultcategory',     'pending', util.xstr),
+]
+
+
 class User:
     def __init__(self):
         self.name = None
         self.username = None
         self.email = None
+
 
 def find_git_dir():
     dirs = os.getcwd().split('/')
@@ -68,6 +70,15 @@ def load_settings():
     # Load the username
     result['username'] = re.sub('@.*$', '', result['email'])
 
+    # Load up the global settings
+    config = configparser.ConfigParser()
+    config.read(f'{result["directory"]}/config')
+    for option, default, func in GLOBAL_CONF:
+        if (value := config['DEFAULT'][option]) is not None:
+            result[option] = func(value)
+        else:
+            result[option] = default
+
     return result
 
 
@@ -97,4 +108,3 @@ def get_users( settings ):
         del users[settings['username']]
 
     return myself + [users[x] for x in users.keys()]
-

@@ -50,7 +50,7 @@ def import_tags( settings, filter_names=None ):
             continue
 
         with open(file) as handle:
-            if (tag := parse_tag( handle, name )) is not None:
+            if (tag := parse_tag( settings, handle, name )) is not None:
                 tags.append( tag )
 
     return sorted( tags, key=lambda x: x.name.lower() )
@@ -63,13 +63,13 @@ def export_tags( settings, tags ):
         Path(dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{dir}/{tag.name}.md", 'w') as handle:
-            export_tag( handle, tag )
+            export_tag( settings, handle, tag )
 
 
 ### Individual parse/export commands
 
 # Parse tags
-def parse_tag( handle, name=None ):
+def parse_tag( settings, handle, name=None ):
     if (parser := parse_content( handle )) is None and name is None:
         return None
 
@@ -94,7 +94,7 @@ def parse_tag( handle, name=None ):
 
 
 # Write out a spring file
-def export_tag( handle, tag, include_name=False ):
+def export_tag( settings, handle, tag, include_name=False ):
     # Write out the title
     if tag.title is not None:
         handle.write(f'# {tag.title}\n\n')

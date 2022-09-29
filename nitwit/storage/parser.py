@@ -37,15 +37,6 @@ class SubItem:
         self.notes = []
 
 
-def generate_uid( base_dir ):
-    for _ in range(32):
-        uid = hex(random.randint(0, 1048576) & 0xFFFFF)[2:].rjust(5, '0')
-        if not os.path.exists(f'{base_dir}/{uid}'):
-            return uid
-
-    return None
-
-
 # Pass in an open filehandle and we'll generate a ticket
 def parse_content( handle ):
     result = Parser()
