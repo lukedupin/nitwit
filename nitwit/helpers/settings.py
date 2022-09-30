@@ -11,11 +11,11 @@ CONF = [
     ('subscribetags',       'bug,crash', lambda x: util.xstr(x).split(',')),
 ]
 CATEGORIES = [
-    ('pending',     False,  False),
-    ('accepted',    True,   False),
-    ('testing',     True,   False),
-    ('completed',   False,  True),
-    ('trash',       False,  True),
+    ('pending',     False,  True),
+    ('accepted',    True,   True),
+    ('testing',     True,   True),
+    ('completed',   True,  False),
+    ('trash',       False,  False),
 ]
 TAGS = [
     'bug',

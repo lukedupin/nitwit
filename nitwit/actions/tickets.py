@@ -2,6 +2,7 @@ from optparse import OptionParser
 
 from git import GitCommandError
 
+from nitwit.storage import categories as categories_mod
 from nitwit.storage import tickets as tickets_mod
 from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
@@ -13,7 +14,10 @@ def handle_ticket( settings ):
     #usage = "usage: %command [options] arg"
     parser = OptionParser("")
     parser.add_option("-c", "--create", action="store_true", dest="create", help="Create a new item")
-    parser.add_option("-a", "--all", action="store_true", dest="all", help="Edit all the tickets at once")
+    parser.add_option("-a", "--all", action="store_true", dest="all", help="Show all tickets, unaccepted and active")
+    parser.add_option("-u", "--unaccepted", action="store_true", dest="unaccepted", help="Show only unaccepted")
+    parser.add_option("-i", "--invisible", action="store_true", dest="invisible", help="Show invisible tickets")
+    parser.add_option("-I", "--invisible-all", action="store_true", dest="invisible_all", help="Show visible and invisible tickets")
     parser.add_option("-b", "--batch", action="store_true", dest="batch", help="Edit all tickets at once")
 
     (options, args) = parser.parse_args()
@@ -40,7 +44,19 @@ def handle_ticket( settings ):
     return process_print( settings, args, options )
 
 
+def is_show_ticket( options, categories, ticket ):
+    if (cat := categories.get( ticket.category )) is None:
+        return True
+
+    if cat.visible == util.xbool(options.invisible):
+        return False
+
+    return options.accepted or cat.accepted
+
+
 def process_print( settings, args, options ):
+    categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
+
     tickets = tickets_mod.import_tickets( settings )
     if len(tickets) <= 0:
         print( "No tickets found. Try creating one." )
@@ -48,6 +64,9 @@ def process_print( settings, args, options ):
     # Dump the tickets to the screen
     category = None
     for idx, ticket in enumerate(tickets):
+        if not is_show_ticket(options, categories, ticket):
+            continue
+
         if category != ticket.category:
             category = ticket.category
             print()
@@ -60,6 +79,8 @@ def process_print( settings, args, options ):
 
 
 def process_batch( settings, args, options ):
+    categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
+
     tickets = tickets_mod.import_tickets(settings)
     if len(tickets) <= 0:
         return "No tickets found. Try creating one."
@@ -70,6 +91,9 @@ def process_batch( settings, args, options ):
     filename = f"{settings['directory']}/tickets.md"
     with open(filename, "w") as handle:
         for idx, ticket in enumerate(tickets):
+            if not is_show_ticket( options, categories, ticket ):
+                continue
+
             kill_list[ticket.uid] = True
             tickets_mod.export_ticket( settings, handle, ticket, include_uid=True )
 

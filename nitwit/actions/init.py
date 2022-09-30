@@ -26,18 +26,18 @@ def handle_init( settings ):
         config.write( handle )
 
     # Now we can pull our settings_mod and it should have valid data
-    if (conf := settings_mod.load_settings_mod()) is None:
+    if (conf := settings_mod.load_settings()) is None:
         return "Couldn't load settings_mod after initial attempt in Git repo"
 
     print( f"Initialized nitwit configuration into Git repository in {dir}/.git")
 
     # Setup the default categories
     cats = []
-    for name, active, hidden in settings_mod.CATEGORIES:
+    for name, accepted, visible in settings_mod.CATEGORIES:
         cat = categories.Category()
         cat.name = name
-        cat.active = active
-        cat.hidden = hidden
+        cat.accepted = accepted
+        cat.visible = visible
         cats.append( cat )
 
     # Setup the default categories

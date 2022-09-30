@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime
 
 from nitwit.storage.parser import parse_content
+from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 
 
@@ -12,8 +13,8 @@ class Category:
         self.filename = None
         self.name = None
         self.title = None
-        self.active = False
-        self.hidden = False
+        self.accepted = True
+        self.visible = True
         self.notes = []
 
 
@@ -42,7 +43,7 @@ def safe_category( settings, category, categories=None ):
 
 
 # Parse all tags
-def import_categories( settings, filter_names=None ):
+def import_categories( settings, filter_names=None, show_invisible=False ):
     categories = []
 
     # Read in all the categories
@@ -54,7 +55,8 @@ def import_categories( settings, filter_names=None ):
 
         with open(file) as handle:
             if (category := parse_category( settings, handle, name )) is not None:
-                categories.append( category )
+                if show_invisible or not category.visible:
+                    categories.append( category )
 
     return categories
 
@@ -65,9 +67,13 @@ def export_categories( settings, categories ):
     dir = f"{settings['directory']}/categories"
     Path(dir).mkdir(parents=True, exist_ok=True)
 
+    repo = settings_mod.git_repo()
+
     for category in categories:
         with open(f"{dir}/{category.name}.md", 'w') as handle:
             export_category( settings, handle, category )
+
+            repo.index.add( [handle.name] )
 
 
 ### Individual parse/export commands
@@ -81,8 +87,8 @@ def parse_category( settings, handle, name ):
     category = Category()
     category.filename = handle.name
     category.notes = parser.notes
-    category.active = util.xbool(parser.variables.get('active'))
-    category.hidden = util.xbool(parser.variables.get('hidden'))
+    category.accepted = util.xbool(parser.variables.get('accepted'))
+    category.visible = util.xbool(parser.variables.get('visible'))
 
     # Store the name
     category.name = name
@@ -108,13 +114,13 @@ def export_category( settings, handle, category, include_name=False ):
         handle.write(f'# {category.name.capitalize()}\n\n')
 
     # Write my modifiers
-    if category.active is not None or category.hidden is not None or include_name:
+    if category.accepted is not None or category.visible is not None or include_name:
         if include_name:
             handle.write(f'> #{category.name}\n')
-        if category.active is not None:
-            handle.write(f'> $active={"true" if category.active else "false"}\n')
-        if category.hidden is not None:
-            handle.write(f'> $hidden={"true" if category.hidden else "false"}\n')
+        if category.accepted is not None:
+            handle.write(f'> $accepted={"true" if category.accepted else "false"}\n')
+        if category.visible is not None:
+            handle.write(f'> $visible={"true" if category.visible else "false"}\n')
         handle.write('\n')
 
     # Write out the user's notes
