@@ -1,68 +1,170 @@
+from optparse import OptionParser
+
+from git import GitCommandError
+
 from nitwit.storage import tickets as tickets_mod
+from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 
 import random, os, re
 
 
-def handle_ticket( parser, options, args, settings ):
-    # Create?
-    if options.create is not None:
-        ticket = tickets_mod.Ticket( None, None, tickets_mod.safe_category(None, settings) )
+def handle_ticket( settings ):
+    #usage = "usage: %command [options] arg"
+    parser = OptionParser("")
+    parser.add_option("-c", "--create", action="store_true", dest="create", help="Create a new item")
+    parser.add_option("-a", "--all", action="store_true", dest="all", help="Edit all the tickets at once")
+    parser.add_option("-b", "--batch", action="store_true", dest="batch", help="Edit all tickets at once")
 
-        titles = []
-        for mod in options.create.split(' '):
-            if mod[0] == '^':
-                ticket.category = tickets_mod.safe_category(mod[1:], settings)
-            elif mod[0] == '!':
-                ticket.priority = util.xint(mod[1:])
-            elif mod[0] == '@':
-                ticket.owners.append(mod[1:])
-            elif mod[0] == '#':
-                ticket.tags.append(mod[1:])
-            else:
-                titles.append( mod )
+    (options, args) = parser.parse_args()
+    args = args[1:] # Cut away the action name, since its always "Ticket"
 
-        ticket.title = ' '.join(titles)
-        tickets_mod.export_tickets( settings, [ticket] )
+    # edit all the tickets
+    if options.batch:
+        return process_batch( settings, args, options )
 
-        print(f'Created ticket in "{ticket.category}" assigned to @{ticket.owners}')
+    # Create a new ticket
+    if options.create:
+        name = args[0] if len(args) >= 1 else None
+        ticket = tickets_mod.find_ticket_by_uid( settings, name )
+        if ticket is None:
+            return process_create( settings, args, options )
+        else:
+            return process_edit( settings, args, options, ticket )
 
-        return None
+    # Edit a ticket?
+    if len(args) > 0:
+        return process_edit( settings, args, options )
 
-    # Print out the categories
-    if len(args) < 2:
-        tickets = tickets_mod.import_tickets( settings )
-        if len(tickets) <= 0:
-            print( "No tickets found. Try creating one." )
+    # Print out the tickets
+    return process_print( settings, args, options )
 
-        hidden = {x: True for x in settings["hiddencategories"]}
 
-        # Dump the categories to the screen
-        categories = {}
-        for ticket in tickets:
-            if ticket.category in hidden:
-                continue
+def process_print( settings, args, options ):
+    tickets = tickets_mod.import_tickets( settings )
+    if len(tickets) <= 0:
+        print( "No tickets found. Try creating one." )
 
-            if ticket.category not in categories:
-                categories[ticket.category] = []
+    # Dump the tickets to the screen
+    category = None
+    for idx, ticket in enumerate(tickets):
+        if category != ticket.category:
+            category = ticket.category
+            print()
+            print(f"   ^{category}")
+            print()
 
-            categories[ticket.category].append( ticket )
-
-        # Sort the categories
-        for category in categories.keys():
-            if len(categories[category]) > 0:
-                print(category)
-
-            for ticket in sorted( categories[category], key=lambda x: x.title ):
-                print(f"    ${ticket.uid} {ticket.title[:32]}")
-
-        return None
-
-    # Load up a ticket
-    uid = re.sub( '[$]', '', args[1] )
-    if len(tickets := tickets_mod.import_tickets( settings, [uid])) == 1:
-        os.system(f'{os.environ["EDITOR"]} {tickets[0].filename}')
-    else:
-        return f"Couldn't find ticket by uid {args[1]}"
+        print(f'{str(idx+1).ljust(5)} :{ticket.uid.ljust(20)} {util.xstr(ticket.title)[:64]}')
 
     return None
+
+
+def process_batch( settings, args, options ):
+    tickets = tickets_mod.import_tickets(settings)
+    if len(tickets) <= 0:
+        return "No tickets found. Try creating one."
+
+    kill_list = {}
+
+    # Open the temp file to write out tickets
+    filename = f"{settings['directory']}/tickets.md"
+    with open(filename, "w") as handle:
+        for idx, ticket in enumerate(tickets):
+            kill_list[ticket.uid] = True
+            tickets_mod.export_ticket( settings, handle, ticket, include_uid=True )
+
+            if idx + 1 < len(tickets):
+                handle.write("======\n\n")
+
+    # Start the editor
+    util.editFile( filename )
+
+    # Wrapp up by parsing
+    tickets = []
+    try:
+        with open(filename) as handle:
+            # Loop while we have data to read
+            while not util.is_eof(handle):
+                if (ticket := tickets_mod.parse_ticket(settings, handle)) is None:
+                    break
+
+                tickets.append( ticket )
+                if ticket.uid in kill_list:
+                    del kill_list[ticket.uid]
+
+    except FileNotFoundError:
+        return None
+
+    # Remove everything that is now missing
+    if (repo := settings_mod.git_repo()) is not None:
+        for rm in kill_list.keys():
+            try:
+                repo.index.move([f'{settings["directory"]}/tickets/{rm}.md', f'{settings["directory"]}/tickets/{rm}.md_'])
+
+            except GitCommandError:
+                pass
+
+    # Finally output the updated tickets
+    os.remove(filename)
+    tickets_mod.export_tickets( settings, tickets )
+
+    return None
+
+
+def process_create( settings, args, options ):
+    ticket = tickets_mod.Ticket()
+    if len(args) > 0:
+        ticket.title = re.sub('[_-]', ' ', ' '.join(args).capitalize())
+
+    else:
+        ticket.title = "New ticket title"
+    ticket.category = settings['defaultcategory']
+    ticket.owners = [settings['username']]
+    ticket.tags = ["tags"]
+    ticket.priority = 0
+    ticket.difficulty = 0
+
+    # Open the temp file to write out tickets
+    tmp = f"{settings['directory']}/tickets.md"
+    with open(tmp, "w") as handle:
+        tickets_mod.export_ticket( settings, handle, ticket )
+
+    # Start the editor
+    util.editFile( tmp )
+
+    # Wrapp up by parsing
+    tickets = []
+    try:
+        with open(tmp) as handle:
+            # Loop while we have data to read
+            while not util.is_eof(handle):
+                uid = tickets_mod.generate_uid( settings['directory'] )
+                if (ticket := tickets_mod.parse_ticket(settings, handle, uid=uid)) is None:
+                    break
+
+                tickets.append( ticket )
+        os.remove(tmp)
+
+    except FileNotFoundError:
+        os.remove(tmp)
+        print("Failed to create ticket")
+        return None
+
+    # Write out the new ticket
+    if len(tickets) != 1:
+        print("Failed to create ticket")
+        return None
+
+    tickets_mod.export_tickets( settings, tickets )
+    print(f"Created ticket: {tickets[0].title}")
+
+
+def process_edit( settings, args, options, ticket=None ):
+    if ticket is None:
+        ticket_name = re.sub('^:', '', ' '.join(args))
+        ticket = tickets_mod.find_ticket_by_uid( settings, ticket_name )
+        if ticket is None:
+            print(f"Couldn't find ticket by: {ticket_name}")
+            return None
+
+    util.editFile( ticket.filename )

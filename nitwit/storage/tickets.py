@@ -2,6 +2,7 @@ from datetime import datetime
 
 from nitwit.storage import categories as categories_mod
 from nitwit.storage.parser import parse_content
+from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 
 from pathlib import Path
@@ -33,6 +34,26 @@ def generate_uid( base_dir ):
 
 ### Bulk commands for parsing and writing to the filesystem
 
+
+def find_ticket_by_uid( settings, uid ):
+    # Fastest, look for a specific one
+    tickets = import_tickets( settings, filter_uids=[util.xstr(uid)] )
+    if len(tickets) == 1:
+        return tickets[0]
+
+    # Attempt an index lookup
+    idx = util.xint(uid) - 1
+    if idx < 0:
+        return None
+
+    # Slower, pulling in all tags and picking by index after sorting
+    tickets = import_tickets( settings )
+    if idx < len(tickets):
+        return tickets[idx]
+
+    return None
+
+
 # Parse all tickets
 def import_tickets( settings, filter_uids=None ):
     tickets = []
@@ -48,13 +69,15 @@ def import_tickets( settings, filter_uids=None ):
             if (ticket := parse_ticket( settings, handle, uid )) is not None:
                 tickets.append( ticket )
 
-    return sorted( tickets, key=lambda x: x.title.lower() )
+    return sorted( tickets, key=lambda x: (x.category.lower(), x.title.lower()) )
 
 
 # Export all tickets
 def export_tickets( settings, tickets ):
     new_count = 0
     update_count = 0
+
+    repo = settings_mod.git_repo()
 
     # Setup the base ticket directory
     dir = f'{settings["directory"]}/tickets'
@@ -75,6 +98,8 @@ def export_tickets( settings, tickets ):
         # Check if anything changed
         if before != util.sha256sum( filename ):
             update_count += 1
+
+        repo.index.add([filename])
 
     return new_count, update_count
 
@@ -120,7 +145,9 @@ def export_ticket( settings, handle, ticket, include_uid=False ):
     # Write out the configuration options
     ret = None
     if include_uid:
-        ret = handle.write(f'> ${ticket.uid}\n')
+        if ticket.uid is None:
+            ticket.uid = generate_uid( settings['directory'] )
+        ret = handle.write(f'> :{ticket.uid}\n')
     if ticket.category is not None:
         ret = handle.write(f'> ^{categories_mod.safe_category( settings, ticket.category )}\n')
     if len(ticket.owners) > 0:
@@ -128,7 +155,7 @@ def export_ticket( settings, handle, ticket, include_uid=False ):
     if len(ticket.tags) > 0:
         ret = handle.write(f'> #{" #".join(ticket.tags)}\n')
     for key in ('priority', 'difficulty'):
-        if (value := handle.__getattribute__(key)) is not None:
+        if (value := ticket.__getattribute__(key)) is not None:
             ret = handle.write(f'> ${key}={value}\n')
     if ret is not None:
         handle.write('\n')

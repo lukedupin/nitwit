@@ -21,11 +21,11 @@ err = None
 
 ## Installation / Setup
 if sys.argv[1] == 'init':
-    err = init.handle_init(parser, options, sys.argv)
+    err = init.handle_init( settings )
 
 ## Tickets
 elif sys.argv[1] == 'ticket':
-    err = tickets.handle_ticket( parser, options, sys.argv, settings )
+    err = tickets.handle_ticket( settings )
 
 ## Tags
 elif sys.argv[1] == 'tag':

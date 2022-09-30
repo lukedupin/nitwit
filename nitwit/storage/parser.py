@@ -113,7 +113,7 @@ def parse_content( handle ):
                 if len(mod) <= 1:
                     continue
 
-                if mod[0] == '!' and result.uid is None:
+                if mod[0] == ':' and result.uid is None:
                     result.uid = mod[1:]
                 elif mod[0] == '@':
                     result.owners.append(mod[1:])

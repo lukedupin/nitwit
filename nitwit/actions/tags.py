@@ -1,7 +1,9 @@
-
 from optparse import OptionParser
 
+from git import GitCommandError
+
 from nitwit.storage import tags as tags_mod
+from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 
 import random, os, re
@@ -55,12 +57,17 @@ def process_batch( settings, args, options ):
     if len(tags) <= 0:
         return "No tags found. Try creating one."
 
+    kill_list = {}
+
     # Open the temp file to write out tags
     filename = f"{settings['directory']}/tags.md"
     with open(filename, "w") as handle:
-        for tag in tags:
-            tags_mod.export_tag( handle, tag, include_name=True )
-            handle.write("======\n\n")
+        for idx, tag in enumerate(tags):
+            kill_list[tag.name] = True
+            tags_mod.export_tag( settings, handle, tag, include_name=True )
+
+            if idx + 1 < len(tags):
+                handle.write("======\n\n")
 
     # Start the editor
     util.editFile( filename )
@@ -75,11 +82,22 @@ def process_batch( settings, args, options ):
                     break
 
                 tags.append( tag )
+                if tag.name in kill_list:
+                    del kill_list[tag.name]
 
     except FileNotFoundError:
         return None
 
-    # Finallly output the updated tags
+    # Remove everything that is now missing
+    if (repo := settings_mod.git_repo()) is not None:
+        for rm in kill_list.keys():
+            try:
+                repo.index.move([f'{settings["directory"]}/tags/{rm}.md', f'{settings["directory"]}/tags/{rm}.md_'])
+
+            except GitCommandError:
+                pass
+
+    # Finally output the updated tags
     os.remove(filename)
     tags_mod.export_tags( settings, tags )
 

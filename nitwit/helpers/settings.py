@@ -49,6 +49,13 @@ def find_git_dir():
     return None
 
 
+def git_repo():
+    if (dir := find_git_dir()) is None:
+        return None
+
+    return git.Repo( dir )
+
+
 def load_settings():
     if (dir := find_git_dir()) is None:
         return None

@@ -1,9 +1,10 @@
-import os, sys, re, glob
+import os, sys, re, glob, git
 
 from pathlib import Path
 from datetime import datetime
 
 from nitwit.storage.parser import parse_content
+from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 
 
@@ -31,7 +32,6 @@ def find_tag_by_name( settings, name, show_hidden=False ):
         return None
 
     # Slower, pulling in all tags and picking by index after sorting
-    print(show_hidden)
     tags = import_tags( settings, show_hidden=show_hidden )
     if idx < len(tags):
         return tags[idx]
@@ -64,9 +64,16 @@ def export_tags( settings, tags ):
     dir = f'{settings["directory"]}/tags'
     Path(dir).mkdir(parents=True, exist_ok=True)
 
+    # Pull the repo so we can add stuff
+    if (repo := settings_mod.git_repo()) is None:
+        print("Couldn't find repo")
+        return
+
     for tag in tags:
         with open(f"{dir}/{tag.name}.md", 'w') as handle:
             export_tag( settings, handle, tag )
+
+            repo.index.add([handle.name])
 
 
 ### Individual parse/export commands
@@ -113,5 +120,7 @@ def export_tag( settings, handle, tag, include_name=False ):
         handle.write('\n')
 
     # Write out the user's notes
-    for note in tag.notes:
-        handle.write(f'{note}\n')
+    if len(tag.notes) > 0:
+        for note in tag.notes:
+            handle.write(f'{note}\n')
+        handle.write('\n')
