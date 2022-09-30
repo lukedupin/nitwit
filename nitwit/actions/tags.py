@@ -8,37 +8,37 @@ import random, os, re
 
 
 def handle_tag( settings ):
-    # Configure the usage
     #usage = "usage: %command [options] arg"
     parser = OptionParser("")
     parser.add_option("-c", "--create", action="store_true", dest="create", help="Create a new item")
     parser.add_option("-a", "--all", action="store_true", dest="all", help="Edit all the tags at once")
+    parser.add_option("-b", "--batch", action="store_true", dest="batch", help="Edit all tags at once")
 
     (options, args) = parser.parse_args()
     args = args[1:] # Cut away the action name, since its always "Tag"
 
     # Edit all the tags
-    if options.all:
-        return process_all( settings, args )
+    if options.batch:
+        return process_batch( settings, args, options )
 
     # Create a new tag
     if options.create:
-        tag = tags_mod.find_tag_by_name( settings, ' '.join(args))
+        tag = tags_mod.find_tag_by_name( settings, ' '.join(args), show_hidden=options.all)
         if tag is None:
-            return process_create( settings, args )
+            return process_create( settings, args, options )
         else:
-            return process_edit( settings, args, tag )
+            return process_edit( settings, args, options, tag )
 
     # Edit a tag?
     if len(args) > 0:
-        return process_edit( settings, args )
+        return process_edit( settings, args, options )
 
     # Print out the tags
-    return process_print( settings, args )
+    return process_print( settings, args, options )
 
 
-def process_print( settings, args ):
-    tags = sorted( tags_mod.import_tags( settings ), key=lambda x: x.name )
+def process_print( settings, args, options ):
+    tags = sorted( tags_mod.import_tags( settings, show_hidden=options.all ), key=lambda x: x.name )
     if len(tags) <= 0:
         print( "No tags found. Try creating one." )
 
@@ -50,8 +50,8 @@ def process_print( settings, args ):
     return None
 
 
-def process_all( settings, tags ):
-    tags = tags_mod.import_tags(settings)
+def process_batch( settings, args, options ):
+    tags = tags_mod.import_tags(settings, show_hidden=options.all)
     if len(tags) <= 0:
         return "No tags found. Try creating one."
 
@@ -71,7 +71,7 @@ def process_all( settings, tags ):
         with open(filename) as handle:
             # Loop while we have data to read
             while not util.is_eof(handle):
-                if (tag := tags_mod.parse_tag(handle, None)) is None:
+                if (tag := tags_mod.parse_tag(settings, handle)) is None:
                     break
 
                 tags.append( tag )
@@ -86,7 +86,7 @@ def process_all( settings, tags ):
     return None
 
 
-def process_create( settings, args ):
+def process_create( settings, args, options ):
     tag = tags_mod.Tag()
     if len(args) > 0:
         tag.name = args[0]
@@ -99,7 +99,7 @@ def process_create( settings, args ):
     # Open the temp file to write out tags
     tmp = f"{settings['directory']}/tags.md"
     with open(tmp, "w") as handle:
-        tags_mod.export_tag( handle, tag, include_name=True )
+        tags_mod.export_tag( settings, handle, tag, include_name=True )
 
     # Start the editor
     util.editFile( tmp )
@@ -110,7 +110,7 @@ def process_create( settings, args ):
         with open(tmp) as handle:
             # Loop while we have data to read
             while not util.is_eof(handle):
-                if (tag := tags_mod.parse_tag(handle, None)) is None:
+                if (tag := tags_mod.parse_tag(settings, handle)) is None:
                     break
 
                 tags.append( tag )
@@ -130,10 +130,10 @@ def process_create( settings, args ):
     print(f"Created tag: {tags[0].name}")
 
 
-def process_edit( settings, args, tag=None ):
+def process_edit( settings, args, options, tag=None ):
     if tag is None:
         tag_name = ' '.join(args)
-        tag = tags_mod.find_tag_by_name( settings, tag_name)
+        tag = tags_mod.find_tag_by_name( settings, tag_name, show_hidden=options.all )
         if tag is None:
             print(f"Couldn't find tag by: {tag_name}")
             return None

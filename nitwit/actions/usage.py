@@ -13,11 +13,33 @@ Nitwit usage:
 
 
 def detail_ticket():
-    pass
+    print('''
+Ticket usage:
+    init        Initialize a new nitwit ticket directory inside git
+
+    ticket      Interface with tickets
+    tag         Manipulate tags which are used to group tickets
+    category    Configure categories which manage tickets as through the system
+    list        Manage lists of tickets which are used to focus priority
+
+    help        Get more detailed information about each section
+''')
 
 
 def detail_tag():
-    pass
+    print('''
+Tag usage:
+    nw tag -[-c | -a | -b] [--create | --all | --batch] <tagname>
+
+DESCRIPTION
+    View / edit / create/ delete tags.
+    
+    Empty           Display all currently active tags
+    -a | --all      All tags vs ignoring hidden
+    -c | --create   Creates a new tag by the given name
+    -b | --batch    Batch all tags vs just hidden
+    <tagname>       Edit a single tag
+''')
 
 
 def detail_category():

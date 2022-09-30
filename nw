@@ -2,14 +2,11 @@
 
 from optparse import OptionParser
 
-from nitwit.actions import reports, tags, categories, tickets, init, usage
+from nitwit.actions import tags, categories, tickets, init, usage
 from nitwit.helpers.settings import load_settings
 
 import sys, os
 
-
-parser = None
-options = None
 
 # Load the git/config settings file
 if (settings := load_settings()) is None:
@@ -25,12 +22,6 @@ err = None
 ## Installation / Setup
 if sys.argv[1] == 'init':
     err = init.handle_init(parser, options, sys.argv)
-
-## Reports
-elif sys.argv[1] == 'gen':
-    err = reports.handle_gen(parser, options, sys.argv, settings)
-elif sys.argv[1] == 'consume':
-    err = reports.handle_consume(parser, options, sys.argv, settings)
 
 ## Tickets
 elif sys.argv[1] == 'ticket':
@@ -49,7 +40,7 @@ elif sys.argv[1] == 'list':
     err = lists.handle_sprints(parser, options, sys.argv, settings)
 
 elif sys.argv[1] == 'help':
-    usage.show_usage( sys.argv[1] )
+    usage.show_usage( sys.argv[2] if len(sys.argv) >= 3 else None )
 
 else:
     usage.show_usage()

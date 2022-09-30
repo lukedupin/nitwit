@@ -19,9 +19,9 @@ class Tag:
 ### Bulk commands for parsing and writing to the filesystem
 
 
-def find_tag_by_name( settings, name ):
+def find_tag_by_name( settings, name, show_hidden=False ):
     # Fastest, look for a specific one
-    tags = import_tags( settings, filter_names=[util.xstr(name)] )
+    tags = import_tags( settings, filter_names=[util.xstr(name)], show_hidden=show_hidden )
     if len(tags) == 1:
         return tags[0]
 
@@ -31,7 +31,8 @@ def find_tag_by_name( settings, name ):
         return None
 
     # Slower, pulling in all tags and picking by index after sorting
-    tags = import_tags( settings )
+    print(show_hidden)
+    tags = import_tags( settings, show_hidden=show_hidden )
     if idx < len(tags):
         return tags[idx]
 
@@ -39,7 +40,7 @@ def find_tag_by_name( settings, name ):
 
 
 # Parse all tags
-def import_tags( settings, filter_names=None ):
+def import_tags( settings, filter_names=None, show_hidden=False ):
     tags = []
 
     # Read in all the tags
@@ -51,7 +52,8 @@ def import_tags( settings, filter_names=None ):
 
         with open(file) as handle:
             if (tag := parse_tag( settings, handle, name )) is not None:
-                tags.append( tag )
+                if show_hidden or not tag.hidden:
+                    tags.append( tag )
 
     return sorted( tags, key=lambda x: x.name.lower() )
 
