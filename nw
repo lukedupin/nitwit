@@ -2,7 +2,7 @@
 
 from optparse import OptionParser
 
-from nitwit.actions import reports, tags, categories, tickets, init, sprints
+from nitwit.actions import reports, tags, categories, tickets, init, usage
 from nitwit.helpers.settings import load_settings
 
 import sys, os
@@ -13,10 +13,12 @@ options = None
 
 # Load the git/config settings file
 if (settings := load_settings()) is None:
-    parser.error("Please only run inside of a git repo")
+    print("Please only run inside of a git repo")
+    exit(1)
 
 if len(sys.argv) < 2:
-    parser.error("Couldn't find a valid git repo")
+    usage.show_usage()
+    exit(1)
 
 err = None
 
@@ -42,17 +44,18 @@ elif sys.argv[1] == 'tag':
 elif sys.argv[1] == 'category':
     err = categories.handle_category(parser, options, sys.argv, settings)
 
-## Sprint
-elif sys.argv[1] == 'sprint':
-    err = sprints.handle_sprints(parser, options, sys.argv, settings)
+## Lists
+elif sys.argv[1] == 'list':
+    err = lists.handle_sprints(parser, options, sys.argv, settings)
+
+elif sys.argv[1] == 'help':
+    usage.show_usage( sys.argv[1] )
 
 else:
-    err = "Unknown command"
+    usage.show_usage()
 
 ## Errors
 if err is not None:
     print(err)
-    #parser.print_help()
-    #parser.error(f'''Invalid argv, review the info
-#{err}
-#''')
+    print()
+    usage.show_usage()

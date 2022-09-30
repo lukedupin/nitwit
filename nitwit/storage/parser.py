@@ -16,6 +16,7 @@ class Parser:
         self.tags = []
         self.subitems = []
         self.notes = []
+        self.ticket_uids = []
         self.variables = {}
 
     def has_content(self):
@@ -30,11 +31,44 @@ class Parser:
                len(self.variables) > 0
 
 
+class TicketUid:
+    def __init__(self):
+        self.uid = None
+        self.active = True
+
+    @staticmethod
+    def parse( line ):
+        if (ret := re.search(r'[*+-]\s*(~?):(\w+)', line)) is not None:
+            tuid = TicketUid()
+            tuid.active = ret.group(1) == '~'
+            tuid.uid = ret.group(2)
+            return tuid
+
+        if (ret := re.search(r'[*+-]\s*~~:(\w+)', line)) is not None:
+            tuid = TicketUid()
+            tuid.active = False
+            tuid.uid = ret.group(2)
+            return tuid
+
+        return None
+
+
 class SubItem:
-    def __init__(self, clean):
-        self.active = not re.search(r'^~~', clean) or not re.search(r'~~$', clean)
-        self.name = re.sub('~~$', '', re.sub('^~~', '', clean))
-        self.notes = []
+    def __init__(self):
+        self.name = ""
+        self.active = True
+
+    @staticmethod
+    def parse( line ):
+        if (ret := re.search(r'^\s*[0-9]+[.][\s]+(.*)$', line)) is not None:
+            clean = ret.group(1)
+
+            sub_item = SubItem()
+            sub_item.active = not re.search(r'^~~', clean) or not re.search(r'~~$', clean)
+            sub_item.name = re.sub('~~$', '', re.sub('^~~', '', clean))
+            return sub_item
+
+        return None
 
 
 # Pass in an open filehandle and we'll generate a ticket
@@ -65,9 +99,13 @@ def parse_content( handle ):
 
             result.title = ret.group(1)
 
+        # Ticket UIDS
+        elif (ticket_uid := TicketUid.parse(line)) is not None:
+            result.ticket_uids.append( ticket_uid )
+
         # Setup the sub topics, they are numbers
-        elif (ret := re.search(r'^\s*[0-9]+[.][\s]+(.*)$', line)):
-            result.subitems.append( SubItem( ret.group(1)))
+        elif (sub_item := SubItem.parse( line )) is not None:
+            result.subitems.append( sub_item )
 
         # Find an account modifier
         elif re.search(r'^>', line):

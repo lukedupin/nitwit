@@ -1,4 +1,4 @@
-from nitwit.storage import categories, tags, tickets
+from nitwit.storage import categories, tags, tickets, lists
 from nitwit.helpers import util, settings
 
 import random, os, git, configparser
@@ -50,6 +50,7 @@ def handle_init( parser, options, args ):
     categories.export_categories( conf, cats )
     tags.export_tags( conf, ts )
     tickets.export_tickets( conf, [] )
+    lists.export_lists( conf, [] )
 
     return None
 

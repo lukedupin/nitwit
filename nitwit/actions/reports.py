@@ -1,6 +1,5 @@
 from nitwit.storage import tickets as tickets_mod
 from nitwit.storage import categories as categories_mod
-from nitwit.storage import sprints as sprints_mod
 from nitwit.helpers import util
 from nitwit.helpers import settings as settings_mod
 
@@ -12,7 +11,7 @@ def handle_gen( parser, options, args, settings ):
     # Load in all the tickets
     tickets = tickets_mod.import_tickets( settings )
     categories = categories_mod.import_categories( settings )
-    sprints = sprints_mod.import_latest_sprints( settings )
+    sprints = []#sprints_mod.import_latest_sprints( settings )
     users = settings_mod.get_users( settings )
 
     handles = {}

@@ -1,4 +1,3 @@
-from nitwit.storage import sprints as sprints_mod
 from nitwit.storage import tickets as tickets_mod
 from nitwit.helpers import util
 
