@@ -6,59 +6,50 @@ from datetime import datetime
 from nitwit.helpers import util
 
 
-class Sprint:
-    def __init__(self, date, owner):
+class List:
+    def __init__(self):
         self.title = None
-        self.date = date
-        self.owner = owner
+        self.date = None
+        self.owner = None
+        self.active = None
+        self.completed = None
         self.ticket_uids = []
         self.notes = []
 
 
 ### Bulk commands for parsing and writing to the filesystem
 
-# Return the latest sprint date
-def get_latest_sprint_date( settings ):
-    latest_dir = None
-    latest_unix = None
+# Parse all lists
+def import_lists( settings, filter_owners=None, active=None, completed=None ):
+    lists = []
 
-    # Read in all the sprints
-    for dir in glob.glob(f'{settings["directory"]}/_sprints/**'):
-        info = re.split('/', dir)
-        unix = util.timeToUnix( datetime.strptime( info[-1], '%Y-%m-%d'))
-        if util.xint( latest_unix) < unix:
-            latest_dir = dir
-            latest_unix = unix
+    # Read in all the lists
+    for file in glob.glob(f'{settings["directory"]}/lists/**/**.md', recursive=True):
+        info = re.split('/', file)
+        owner = re.sub( r'[.]md$', '', info[-2].lower() )
+        name = re.sub( r'[.]md$', '', info[-1].lower() )
+        if filter_owners is not None and owner not in filter_owners:
+            continue
 
-    return latest_dir
-
-
-# Parse all sprints
-def import_sprints( settings, filter_owners=None ):
-    sprints = []
-
-    # Read in all the sprints
-    for file in glob.glob(f'{settings["directory"]}_sprints/**/meta.md', recursive=True):
-        owner = re.split('/', file)[-2].lower()
         with open(file) as handle:
             if filter_owners is not None and owner not in filter_owners:
                 continue
 
             if (sprint := parse_sprint( handle, owner )) is not None:
-                sprints.append( sprint )
+                lists.append( sprint )
 
-    return sprints
+    return lists
 
 
-# Parse all sprints
-def import_latest_sprints( settings, filter_owners=None ):
-    sprints = []
+# Parse all lists
+def import_latest_lists( settings, filter_owners=None ):
+    lists = []
 
     # Is there no directory?
     if (latest_dir := get_latest_sprint_date( settings )) is None:
-        return sprints
+        return lists
 
-    # Read in all the sprints
+    # Read in all the lists
     for file in glob.glob(f'{latest_dir}/**.md', recursive=True):
         info = re.split('/', file)
         owner = re.sub( r'[.]md$', '', info[-1].lower() )
@@ -68,17 +59,17 @@ def import_latest_sprints( settings, filter_owners=None ):
                 continue
 
             if (sprint := parse_sprint( handle, date, owner )) is not None:
-                sprints.append( sprint )
+                lists.append( sprint )
 
-    return sprints
+    return lists
 
 
-# Export all sprints
-def export_sprints( settings, sprints ):
+# Export all lists
+def export_lists( settings, lists ):
     if (latest_dir := get_latest_sprint_date( settings )) is None:
-        latest_dir = f'{settings["directory"]}/_sprints/{util.dateToStr()}'
+        latest_dir = f'{settings["directory"]}/_lists/{util.dateToStr()}'
 
-    for sprint in sprints:
+    for sprint in lists:
         Path(latest_dir).mkdir(parents=True, exist_ok=True)
 
         with open(f"{latest_dir}/{sprint.owner}.md", 'w') as handle:

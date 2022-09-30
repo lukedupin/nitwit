@@ -56,13 +56,15 @@ def export_tickets( settings, tickets ):
     new_count = 0
     update_count = 0
 
+    # Setup the base ticket directory
+    dir = f'{settings["directory"]}/tickets'
+    Path(dir).mkdir(parents=True, exist_ok=True)
+
     for ticket in tickets:
         if ticket.uid is None:
             ticket.uid = generate_uid( settings['directory'] )
             new_count += 1
 
-        dir = f'{settings["directory"]}/tickets'
-        Path(dir).mkdir(parents=True, exist_ok=True)
         filename = f"{dir}/{ticket.uid}.md"
 
         # Hash before we write

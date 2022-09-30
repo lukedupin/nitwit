@@ -61,10 +61,11 @@ def import_categories( settings, filter_names=None ):
 
 # Export all sprints
 def export_categories( settings, categories ):
-    for category in categories:
-        dir = f"{settings['directory']}/categories"
-        Path(dir).mkdir(parents=True, exist_ok=True)
+    # Create the categories
+    dir = f"{settings['directory']}/categories"
+    Path(dir).mkdir(parents=True, exist_ok=True)
 
+    for category in categories:
         with open(f"{dir}/{category.name}.md", 'w') as handle:
             export_category( settings, handle, category )
 
@@ -107,12 +108,12 @@ def export_category( settings, handle, category, include_name=False ):
         handle.write(f'# {category.name.capitalize()}\n\n')
 
     # Write my modifiers
-    if category.active or category.hidden or include_name:
+    if category.active is not None or category.hidden is not None or include_name:
         if include_name:
             handle.write(f'> #{category.name}\n')
-        if category.active:
+        if category.active is not None:
             handle.write(f'> $active={"true" if category.active else "false"}\n')
-        if category.hidden:
+        if category.hidden is not None:
             handle.write(f'> $hidden={"true" if category.hidden else "false"}\n')
         handle.write('\n')
 

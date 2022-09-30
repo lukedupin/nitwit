@@ -58,10 +58,11 @@ def import_tags( settings, filter_names=None ):
 
 # Export all tags
 def export_tags( settings, tags ):
-    for tag in tags:
-        dir = f'{settings["directory"]}/tags'
-        Path(dir).mkdir(parents=True, exist_ok=True)
+    # Setup the base tags
+    dir = f'{settings["directory"]}/tags'
+    Path(dir).mkdir(parents=True, exist_ok=True)
 
+    for tag in tags:
         with open(f"{dir}/{tag.name}.md", 'w') as handle:
             export_tag( settings, handle, tag )
 
@@ -102,10 +103,10 @@ def export_tag( settings, handle, tag, include_name=False ):
         handle.write(f'# {tag.name.capitalize()}\n\n')
 
     # Write my modifiers
-    if tag.hidden or include_name:
+    if tag.hidden is not None or include_name:
         if include_name:
             handle.write(f'> #{tag.name}\n')
-        if tag.hidden:
+        if tag.hidden is not None:
             handle.write(f'> $hidden={"true" if tag.hidden else "false"}\n')
         handle.write('\n')
 

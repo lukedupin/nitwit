@@ -74,7 +74,7 @@ def load_settings():
     config = configparser.ConfigParser()
     config.read(f'{result["directory"]}/config')
     for option, default, func in GLOBAL_CONF:
-        if (value := config['DEFAULT'][option]) is not None:
+        if (value := config['DEFAULT'].get(option)) is not None:
             result[option] = func(value)
         else:
             result[option] = default
