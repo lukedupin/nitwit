@@ -33,7 +33,7 @@ elif sys.argv[1] == 'tag':
 
 ## Categories
 elif sys.argv[1] == 'category':
-    err = categories.handle_category(parser, options, sys.argv, settings)
+    err = categories.handle_category(settings)
 
 ## Lists
 elif sys.argv[1] == 'list':

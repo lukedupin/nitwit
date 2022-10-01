@@ -42,6 +42,25 @@ def safe_category( settings, category, categories=None ):
     return settings['defaultcategory']
 
 
+def find_category_by_name( settings, name, show_invisible=False ):
+    # Fastest, look for a specific one
+    categories = import_categories( settings, filter_names=[util.xstr(name)], show_invisible=show_invisible )
+    if len(categories) == 1:
+        return categories[0]
+
+    # Attempt an index lookup
+    idx = util.xint(name) - 1
+    if idx < 0:
+        return None
+
+    # Slower, pulling in all categories and picking by index after sorting
+    categories = import_categories( settings, show_invisible=show_invisible )
+    if idx < len(categories):
+        return categories[idx]
+
+    return None
+
+
 # Parse all tags
 def import_categories( settings, filter_names=None, show_invisible=False ):
     categories = []
@@ -55,7 +74,7 @@ def import_categories( settings, filter_names=None, show_invisible=False ):
 
         with open(file) as handle:
             if (category := parse_category( settings, handle, name )) is not None:
-                if show_invisible or not category.visible:
+                if show_invisible or category.visible:
                     categories.append( category )
 
     return categories
@@ -80,7 +99,7 @@ def export_categories( settings, categories ):
 
 
 # Parse tags
-def parse_category( settings, handle, name ):
+def parse_category( settings, handle, name=None ):
     if (parser := parse_content( handle )) is None and name is None:
         return None
 
@@ -116,7 +135,7 @@ def export_category( settings, handle, category, include_name=False ):
     # Write my modifiers
     if category.accepted is not None or category.visible is not None or include_name:
         if include_name:
-            handle.write(f'> #{category.name}\n')
+            handle.write(f'> ^{category.name}\n')
         if category.accepted is not None:
             handle.write(f'> $accepted={"true" if category.accepted else "false"}\n')
         if category.visible is not None:
