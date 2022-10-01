@@ -17,7 +17,6 @@ def handle_ticket( settings ):
     parser.add_option("-a", "--all", action="store_true", dest="all", help="Show all tickets, unaccepted and active")
     parser.add_option("-u", "--unaccepted", action="store_true", dest="unaccepted", help="Show only unaccepted")
     parser.add_option("-i", "--invisible", action="store_true", dest="invisible", help="Show invisible tickets")
-    parser.add_option("-I", "--invisible-all", action="store_true", dest="invisible_all", help="Show visible and invisible tickets")
     parser.add_option("-b", "--batch", action="store_true", dest="batch", help="Edit all tickets at once")
 
     (options, args) = parser.parse_args()
@@ -48,10 +47,10 @@ def is_show_ticket( options, categories, ticket ):
     if (cat := categories.get( ticket.category )) is None:
         return True
 
-    if cat.visible == util.xbool(options.invisible):
+    if not options.invisible and not cat.visible:
         return False
 
-    return options.accepted or cat.accepted
+    return options.all or util.xbool(options.unaccepted) != cat.accepted
 
 
 def process_print( settings, args, options ):
