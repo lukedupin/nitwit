@@ -431,3 +431,17 @@ def editFile(filename):
             editor = os.environ[key]
 
     return os.system(f'{editor} {filename}')
+
+
+# Return the first entry found in an array
+def first( ary, key ):
+    if not callable( key ):
+        idx = ary.index(key)
+        return ary[idx] if idx >= 0 else None
+
+    else:
+        for item in ary:
+            if key( item ):
+                return item
+
+    return None

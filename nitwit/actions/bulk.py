@@ -3,6 +3,7 @@ from optparse import OptionParser
 from git import GitCommandError
 from nitwit.actions import usage
 
+from nitwit.storage.parser import Parser, parse_mods
 from nitwit.storage import tickets as tickets_mod
 from nitwit.storage import categories as categories_mod
 from nitwit.helpers import settings as settings_mod
@@ -26,14 +27,14 @@ def handle_bulk( settings ):
         pass
 
     # Edit all the categories
-    elif args[0] == "categories":
-        handle_categories( settings )
-        pass
+    elif args[0] == "categories" or args[0] == 'category':
+        return handle_categories( settings, options, args )
 
     elif args[0] == 'tags':
         pass
 
     return usage.detail_bulk()
+
 
 def handle_categories( settings, options, args ):
     # Load in all the tickets
@@ -45,27 +46,63 @@ def handle_categories( settings, options, args ):
     # Load up the file
     with open(filename, "w") as handle:
         for category in categories:
-            handle.write(f"# ^{category.name}\n\n")
+            handle.write(f"# ^{category.name.ljust(20)} {category.title}\n\n")
 
             if not options.invisible and not category.visible:
                 continue
 
+            # Write out the tickets
             valid = None
             for ticket in tickets:
                 if ticket.category == category.name:
-                    valid = handle.write(f'* :{ticket.uid}    {ticket.title[:64]}\n')
-
+                    valid = handle.write(f'* :{ticket.uid}  {ticket.title[:64]}\n')
             if valid is not None:
                 handle.write('\n')
 
     util.editFile( filename )
 
+    ticket_updates = []
+
     # Consume the file
     category = None
     with open(filename) as handle:
-        for line
+        for line in handle.readlines():
+            line = line.rstrip()
 
+            # Detect the category
+            if (match := re.search(r'^#\s*\^(\w+)', line)) is not None:
+                category = util.first( categories, lambda x: x.name == match.group(1) )
+                continue
 
+            if category is None or \
+               re.search(r'======', line) is not None:
+                continue
+
+            # Pull ticket data
+            if (match := re.search(r'^\s*[*]\s*(.*)$', line)) is not None:
+                parse = Parser()
+                parse.title = parse_mods( parse, match.group(1) )
+
+                # Attempt to just find the ticket, if all that fails,
+                if (ticket := util.first( tickets, lambda x: x.uid == parse.uid )) is not None:
+                    pass
+                elif (ticket := util.first(tickets, lambda x: x.title == parse.title)) is not None:
+                    pass
+                elif parse.title is not None:
+                    ticket = tickets_mod.to_ticket( settings, parse, uid="hack" )
+                    ticket.uid = None
+
+                # Everything failed, this isn't a valid ticket line
+                else:
+                    continue
+
+                # Convert this ticket to this category, and add it to the update list
+                ticket.category = category.name
+                ticket_updates.append( ticket )
+
+    # Remove the temp file
+    os.remove(filename)
+    tickets_mod.export_tickets( settings, ticket_updates )
 
     return None
 

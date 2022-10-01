@@ -112,6 +112,10 @@ def parse_ticket( settings, handle, uid=None ):
     if (parser := parse_content( handle )) is None and uid is None:
         return None
 
+    return to_ticket( settings, parser, uid, handle.name )
+
+
+def to_ticket( settings, parser, uid=None, filename=None ):
     ticket = Ticket()
 
     # Store the name
@@ -126,7 +130,7 @@ def parse_ticket( settings, handle, uid=None ):
         if (value := parser.variables.get(key)) is not None:
             ticket.__setattr__(key, util.xint(value))
 
-    ticket.filename = handle.name
+    ticket.filename = filename
     ticket.title = util.xstr(parser.title)
     ticket.category = categories_mod.safe_category( settings, parser.category )
 

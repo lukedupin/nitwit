@@ -7,6 +7,7 @@ Nitwit usage:
     tag         Manipulate tags which are used to group tickets
     category    Configure categories which manage tickets as through the system
     list        Manage lists of tickets which are used to focus priority
+    bulk        Bulk edit tickets from different perspectives, see help bulk for details
     
     help        Get more detailed information about each section
 ''')
@@ -45,13 +46,12 @@ DESCRIPTION
 def detail_bulk():
     print('''
 Bulk usage:
-    nw bulk [-c | -a | -b] [--create | --all | --batch] <report_type>
+    nw bulk category [-c | -a | -b] [--create | --all | --batch]
 
 DESCRIPTION
     Edit collections of tickets in one large sheet
 
     <report_type>
-    categories      Display all tickets relative to the category they belong to
     -a | --all      All tags vs ignoring hidden
     -c | --create   Creates a new tag by the given name
     -b | --batch    Batch all tags vs just hidden

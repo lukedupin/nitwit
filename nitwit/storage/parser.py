@@ -109,26 +109,43 @@ def parse_content( handle ):
 
         # Find an account modifier
         elif re.search(r'^>', line):
-            for mod in re.split(' ', line):
-                if len(mod) <= 1:
-                    continue
-
-                if mod[0] == ':' and result.uid is None:
-                    result.uid = mod[1:]
-                elif mod[0] == '@':
-                    result.owners.append(mod[1:])
-                elif mod[0] == '#':
-                    result.tags.append(mod[1:])
-                elif mod[0] == '^':
-                    result.category = mod[1:]
-                elif mod[0] == '&':
-                    result.date = mod[1:]
-                elif mod[0] == '$' and \
-                     (match := re.search(r'([^=]+)=([^\s]+)', mod[1:])) is not None:
-                        result.variables[match.group(1).lower()] = match.group(2).lower()
+            parse_mods( result, line )
 
         # Add in all the chatter
         elif re.search(r'^\s*$', line) is None:
             result.notes.append( line )
 
     return result
+
+
+def parse_mods( result, line ):
+    ary = re.split(r'\s+', line)
+
+    # Iterate through using indexes so we can delete matches as we go through
+    for idx in reversed(range(len(ary))):
+        mod = ary[idx]
+        if len(mod) <= 1:
+            continue
+
+        # Detect the modification
+        if mod[0] == ':' and result.uid is None:
+            result.uid = mod[1:]
+        elif mod[0] == '@':
+            result.owners.append(mod[1:])
+        elif mod[0] == '#':
+            result.tags.append(mod[1:])
+        elif mod[0] == '^':
+            result.category = mod[1:]
+        elif mod[0] == '&':
+            result.date = mod[1:]
+        elif mod[0] == '$' and \
+             (match := re.search(r'([^=]+)=([^\s]+)', mod[1:])) is not None:
+                result.variables[match.group(1).lower()] = match.group(2).lower()
+        else:
+            continue
+
+        # Delete the entry that was "consumed"
+        del ary[idx]
+
+    remains = ' '.join(ary)
+    return remains if re.search(r'[^\w]', remains) is not None else None
