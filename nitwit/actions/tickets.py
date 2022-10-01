@@ -3,6 +3,7 @@ from optparse import OptionParser
 from git import GitCommandError
 
 from nitwit.storage import categories as categories_mod
+from nitwit.storage import tags as tags_mod
 from nitwit.storage import tickets as tickets_mod
 from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
@@ -36,14 +37,24 @@ def handle_ticket( settings ):
             return process_edit( settings, args, options, ticket )
 
     # Edit a ticket?
-    if len(args) > 0:
-        return process_edit( settings, args, options )
+    if process_edit( settings, args, options ):
+        pass
 
     # Print out the tickets
-    return process_print( settings, args, options )
+    elif process_print( settings, args, options ):
+        pass
+
+    else:
+        print(f"Couldn't find ticket by {' '.join(args)}")
 
 
-def is_show_ticket( options, categories, ticket ):
+def is_show_ticket( options, categories, ticket, limit_category, limit_tag ):
+    # Handle limited views
+    if limit_tag is not None:
+        return limit_tag.name in ticket.tags
+    elif limit_category is not None:
+        return limit_category.name == ticket.category
+
     if (cat := categories.get( ticket.category )) is None:
         return True
 
@@ -53,32 +64,12 @@ def is_show_ticket( options, categories, ticket ):
     return options.all or util.xbool(options.unaccepted) != cat.accepted
 
 
-def process_print( settings, args, options ):
-    categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
-
-    tickets = tickets_mod.import_tickets( settings )
-    if len(tickets) <= 0:
-        print( "No tickets found. Try creating one." )
-
-    # Dump the tickets to the screen
-    category = None
-    for idx, ticket in enumerate(tickets):
-        if not is_show_ticket(options, categories, ticket):
-            continue
-
-        if category != ticket.category:
-            category = ticket.category
-            print()
-            print(f"   ^{category}")
-            print()
-
-        print(f'{str(idx+1).ljust(5)} :{ticket.uid.ljust(20)} {util.xstr(ticket.title)[:64]}')
-
-    return None
-
-
 def process_batch( settings, args, options ):
     categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
+    tags = {x.name: x for x in tags_mod.import_tags( settings, show_hidden=True )}
+
+    limit_category = categories.get(args[0]) if len(args) > 0 else None
+    limit_tag = tags.get(args[0]) if len(args) > 0 else None
 
     tickets = tickets_mod.import_tickets(settings)
     if len(tickets) <= 0:
@@ -90,7 +81,7 @@ def process_batch( settings, args, options ):
     filename = f"{settings['directory']}/tickets.md"
     with open(filename, "w") as handle:
         for idx, ticket in enumerate(tickets):
-            if not is_show_ticket( options, categories, ticket ):
+            if not is_show_ticket( options, categories, ticket, limit_category, limit_tag ):
                 continue
 
             kill_list[ticket.uid] = True
@@ -183,11 +174,47 @@ def process_create( settings, args, options ):
 
 
 def process_edit( settings, args, options, ticket=None ):
+    if len(args) <= 0:
+        return False
+
     if ticket is None:
         ticket_name = re.sub('^:', '', ' '.join(args))
         ticket = tickets_mod.find_ticket_by_uid( settings, ticket_name )
         if ticket is None:
-            print(f"Couldn't find ticket by: {ticket_name}")
-            return None
+            return False
 
     util.editFile( ticket.filename )
+    return True
+
+
+def process_print( settings, args, options ):
+    categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
+    tags = {x.name: x for x in tags_mod.import_tags( settings, show_hidden=True )}
+
+    limit_category = categories.get(args[0]) if len(args) > 0 else None
+    limit_tag = tags.get(args[0]) if len(args) > 0 else None
+
+    if len(args) > 0 and not limit_category and not limit_tag:
+        return False
+
+    tickets = tickets_mod.import_tickets( settings )
+    if len(tickets) <= 0:
+        print( "No tickets found. Try creating one." )
+        return False
+
+    # Dump the tickets to the screen
+    category = None
+    for idx, ticket in enumerate(tickets):
+        if not is_show_ticket(options, categories, ticket, limit_category, limit_tag):
+            continue
+
+        if category != ticket.category:
+            category = ticket.category
+            print()
+            print(f"   ^{category}")
+            print()
+
+        print(f'{str(idx+1).ljust(5)} :{ticket.uid.ljust(20)} {util.xstr(ticket.title)[:64]}')
+
+    return True
+
