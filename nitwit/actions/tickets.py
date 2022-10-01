@@ -55,12 +55,13 @@ def is_show_ticket( options, categories, ticket, limit_category, limit_tag ):
     elif limit_category is not None:
         return limit_category.name == ticket.category
 
+    # Hack, if we don't know what category they are in, show them.
     if (cat := categories.get( ticket.category )) is None:
         return True
 
+    # Return based on visibility and accepted
     if not options.invisible and not cat.visible:
         return False
-
     return options.all or util.xbool(options.unaccepted) != cat.accepted
 
 

@@ -2,7 +2,7 @@
 
 from optparse import OptionParser
 
-from nitwit.actions import tags, categories, tickets, init, usage
+from nitwit.actions import tags, categories, tickets, bulk, init, usage
 from nitwit.helpers.settings import load_settings
 
 import sys, os
@@ -38,6 +38,10 @@ elif sys.argv[1] == 'category':
 ## Lists
 elif sys.argv[1] == 'list':
     err = lists.handle_sprints(parser, options, sys.argv, settings)
+
+## Bulk
+elif sys.argv[1] == 'bulk':
+    err = bulk.handle_bulk(settings)
 
 elif sys.argv[1] == 'help':
     usage.show_usage( sys.argv[2] if len(sys.argv) >= 3 else None )
