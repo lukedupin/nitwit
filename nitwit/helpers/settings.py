@@ -104,7 +104,7 @@ def get_users( settings ):
         # Create a new user
         user = User()
         user.name = repo.committer.name
-        user.username = re.sub("@.*$", '', repo.committer.email)
+        user.username = re.sub(r"^.*\+", "", re.sub("@.*$", '', repo.committer.email))
         user.email = repo.committer.email
         users[user.username] = user
         emails[user.email] = True

@@ -2,7 +2,7 @@
 
 from optparse import OptionParser
 
-from nitwit.actions import tags, categories, tickets, bulk, init, usage
+from nitwit.actions import tags, categories, tickets, bulk, lists, init, usage
 from nitwit.helpers.settings import load_settings
 
 import sys, os
@@ -24,20 +24,20 @@ if sys.argv[1] == 'init':
     err = init.handle_init( settings )
 
 ## Tickets
-elif sys.argv[1] == 'ticket':
+elif sys.argv[1] in ('ticket', 'tickets'):
     err = tickets.handle_ticket( settings )
 
 ## Tags
-elif sys.argv[1] == 'tag':
+elif sys.argv[1] in ('tag', 'tags'):
     err = tags.handle_tag(settings)
 
 ## Categories
-elif sys.argv[1] == 'category':
+elif sys.argv[1] in ('category', 'categories'):
     err = categories.handle_category(settings)
 
 ## Lists
-elif sys.argv[1] == 'list':
-    err = lists.handle_sprints(parser, options, sys.argv, settings)
+elif sys.argv[1] in ('list', 'lists'):
+    err = lists.handle_list( settings )
 
 ## Bulk
 elif sys.argv[1] == 'bulk':

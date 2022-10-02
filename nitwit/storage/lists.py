@@ -11,18 +11,38 @@ class List:
     def __init__(self):
         self.title = None
         self.name = None
-        self.date = None
         self.owner = None
-        self.active = None
-        self.completed = None
+        self.date = None
+        self.active = True
         self.ticket_uids = []
         self.notes = []
 
 
 ### Bulk commands for parsing and writing to the filesystem
 
+def find_lst_by_name( settings, name ):
+    owners = [settings['username']]
+
+    # Fastest, look for a specific one
+    lists = import_lists( settings, filter_names=[util.xstr(name)], filter_owners=owners )
+    if len(lists) == 1:
+        return lists[0]
+
+    # Attempt an index lookup
+    idx = util.xint(name) - 1
+    if idx < 0:
+        return None
+
+    # Slower, pulling in all tags and picking by index after sorting
+    lists = import_lists( settings )
+    if idx < len(lists):
+        return lists[idx]
+
+    return None
+
+
 # Parse all lists
-def import_lists( settings, filter_owners=None, filter_names=None, active=None, completed=None ):
+def import_lists( settings, filter_owners=None, filter_names=None, active=True ):
     lists = []
 
     # Read in all the lists
@@ -30,19 +50,15 @@ def import_lists( settings, filter_owners=None, filter_names=None, active=None, 
         info = re.split('/', file)
         name = info[-2].lower()
         owner = re.sub( r'[.]md$', '', info[-1].lower() )
-        if filter_owners is not None and owner not in filter_owners:
+        if filter_names is not None and name not in filter_names:
             continue
 
         with open(file) as handle:
             if filter_owners is not None and owner not in filter_owners:
                 continue
-            if filter_names is not None and name not in filter_names:
-                continue
 
             if (lst := parse_list( settings, handle, name, owner )) is not None:
                 if active is not None and util.xbool(lst.active) != active:
-                    continue
-                if completed is not None and util.xbool(lst.completed) != completed:
                     continue
                 lists.append( lst )
 
@@ -75,8 +91,8 @@ def parse_list( settings, handle, name=None, owner=None ):
 
     # Store the name
     lst.name = name
-    if name is None and parser.name is not None:
-        lst.name = parser.name
+    if name is None and parser.list is not None:
+        lst.name = parser.list
     if lst.name is None:
         return None
 
@@ -88,13 +104,15 @@ def parse_list( settings, handle, name=None, owner=None ):
         return None
 
     # store teh variables
-    for key in ('active', 'completed'):
+    for key in ('active', ):
         if (value := parser.variables.get(key)) is not None:
             lst.__setattr__(key, util.xbool(value))
+    for key in ('date', ):
+        if (value := parser.variables.get(key)) is not None:
+            lst.__setattr__(key, util.xstr(value))
 
     lst.filename = handle.name
     lst.title = util.xstr(parser.title)
-    lst.date = parser.date
     lst.notes = parser.notes
     lst.ticket_uids = parser.ticket_uids
 
@@ -102,25 +120,33 @@ def parse_list( settings, handle, name=None, owner=None ):
 
 
 # Write out a spring file
-def export_list( settings, handle, lst, title_lookup={} ):
+def export_list( settings, handle, lst, title_lookup={}, include_name=False ):
     if lst.title is not None:
-        handle.write(f'# @{lst.owner} {util.xstr(lst.title)[:64]}\n')
+        handle.write(f'# {util.xstr(lst.title)[:64]}\n')
     else:
-        handle.write(f'# @{lst.owner}\n')
+        handle.write(f'# {util.xstr(lst.name)}\n')
     handle.write('\n')
+
+    # Write out the mods
+    if include_name:
+        handle.write(f'> %{lst.name}\n')
+    handle.write(f'> @{lst.owner}\n')
+    if lst.date is not None:
+        handle.write(f'> $date={lst.date}\n')
+    handle.write(f'> $active={util.xbool(lst.active)}\n\n')
 
     # Write out the subitems
     if len(lst.ticket_uids) > 0:
         for ticket_uid in lst.ticket_uids:
             active = '' if ticket_uid.active else '~~'
             if (title := title_lookup.get(ticket_uid.uid)) is not None:
-                handle.write(f'+ {active}:{ticket_uid.uid} {title[:64]}{active}\n')
+                handle.write(f'* {active}:{ticket_uid.uid} {title[:64]}{active}\n')
             else:
-                handle.write(f'+ {active}:{ticket_uid.uid}{active}\n')
+                handle.write(f'* {active}:{ticket_uid.uid}{active}\n')
         handle.write("\n")
 
     else:
-        handle.write("+ \n\n")
+        handle.write("* \n\n")
 
     # Write out the user's notes
     for note in lst.notes:

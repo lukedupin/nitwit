@@ -46,7 +46,7 @@ def handle_categories( settings, options, args ):
 
     # Load up the file
     with open(filename, "w") as handle:
-        write_category_tickets( handle, categories, tickets, options )
+        write_category_tickets( handle, categories, tickets, options.invisible )
 
     util.editFile( filename )
 
@@ -131,7 +131,7 @@ def handle_tags( settings, options, args ):
 
         if len(tickets_missed) > 0:
             handle.write("\n###### Tickets without tags ######\n\n")
-            write_category_tickets( handle, categories, tickets_missed.values(), options, include_empty=False )
+            write_category_tickets( handle, categories, tickets_missed.values(), options.invisible, include_empty=False )
 
     util.editFile( filename )
 
@@ -189,13 +189,13 @@ def handle_tags( settings, options, args ):
     return None
 
 
-def write_category_tickets( handle, categories, tickets, options, include_empty=True ):
+def write_category_tickets( handle, categories, tickets, show_invisible=False, include_empty=True ):
     for category in categories:
         valid = None
         if include_empty:
             handle.write(f"# ^{category.name.ljust(20)} {category.title}\n\n")
 
-        if not options.invisible and not category.visible:
+        if not show_invisible and not category.visible:
             continue
 
         # Write out the tickets

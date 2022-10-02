@@ -11,6 +11,7 @@ class Parser:
         self.uid = None
         self.title = None
         self.category = None
+        self.list = None
         self.date = None
         self.owners = []
         self.tags = []
@@ -23,11 +24,13 @@ class Parser:
         return self.uid is not None or \
                self.title is not None or \
                self.category is not None or \
+               self.list is not None or \
                self.date is not None or \
                len(self.owners) > 0 or \
                len(self.tags) > 0 or \
                len(self.subitems) > 0 or \
                len(self.notes) > 0 or \
+               len(self.ticket_uids) > 0 or \
                len(self.variables) > 0
 
 
@@ -40,14 +43,14 @@ class TicketUid:
     def parse( line ):
         if (ret := re.search(r'[*+-]\s*(~?):(\w+)', line)) is not None:
             tuid = TicketUid()
-            tuid.active = ret.group(1) == '~'
+            tuid.active = ret.group(1) != '~'
             tuid.uid = ret.group(2)
             return tuid
 
         if (ret := re.search(r'[*+-]\s*~~:(\w+)', line)) is not None:
             tuid = TicketUid()
             tuid.active = False
-            tuid.uid = ret.group(2)
+            tuid.uid = ret.group(1)
             return tuid
 
         return None
@@ -90,6 +93,14 @@ def parse_content( handle ):
         # Ignore this
         if re.search(r'^======', line) is not None:
             continue
+
+        # Quit?
+        if re.search(r'^######', line) is not None:
+            handle.seek(last_pos)
+            if result.has_content():
+                return result
+            else:
+                return None
 
         # Title?
         if (ret := re.search(r'^\s*# (.*$)', line)) is not None:
@@ -136,8 +147,8 @@ def parse_mods( result, line ):
             result.tags.append(mod[1:])
         elif mod[0] == '^':
             result.category = mod[1:]
-        elif mod[0] == '&':
-            result.date = mod[1:]
+        elif mod[0] == '%':
+            result.list = mod[1:]
         elif mod[0] == '$' and \
              (match := re.search(r'([^=]+)=([^\s]+)', mod[1:])) is not None:
                 result.variables[match.group(1).lower()] = match.group(2).lower()
