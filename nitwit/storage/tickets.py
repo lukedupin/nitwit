@@ -155,9 +155,11 @@ def export_ticket( settings, handle, ticket, include_uid=False ):
     if ticket.category is not None:
         ret = handle.write(f'> ^{categories_mod.safe_category( settings, ticket.category )}\n')
     if len(ticket.owners) > 0:
-        ret = handle.write(f'> @{" @".join(ticket.owners)}\n')
+        owner_dict = {f"@{x}": True for x in ticket.owners}
+        ret = handle.write(f'> {" ".join(owner_dict.keys())}\n')
     if len(ticket.tags) > 0:
-        ret = handle.write(f'> #{" #".join(ticket.tags)}\n')
+        tags_dict = {f"#{x}": True for x in ticket.tags}
+        ret = handle.write(f'> {" ".join(tags_dict.keys())}\n')
     for key in ('priority', 'difficulty'):
         if (value := ticket.__getattribute__(key)) is not None:
             ret = handle.write(f'> ${key}={value}\n')

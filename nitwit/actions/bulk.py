@@ -6,6 +6,7 @@ from nitwit.actions import usage
 from nitwit.storage.parser import Parser, parse_mods
 from nitwit.storage import tickets as tickets_mod
 from nitwit.storage import categories as categories_mod
+from nitwit.storage import tags as tags_mod
 from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 
@@ -30,8 +31,8 @@ def handle_bulk( settings ):
     elif args[0] == "categories" or args[0] == 'category':
         return handle_categories( settings, options, args )
 
-    elif args[0] == 'tags':
-        pass
+    elif args[0] == 'tags' or args[0] == 'tag':
+        return handle_tags( settings, options, args )
 
     return usage.detail_bulk()
 
@@ -45,19 +46,7 @@ def handle_categories( settings, options, args ):
 
     # Load up the file
     with open(filename, "w") as handle:
-        for category in categories:
-            handle.write(f"# ^{category.name.ljust(20)} {category.title}\n\n")
-
-            if not options.invisible and not category.visible:
-                continue
-
-            # Write out the tickets
-            valid = None
-            for ticket in tickets:
-                if ticket.category == category.name:
-                    valid = handle.write(f'* :{ticket.uid}  {ticket.title[:64]}\n')
-            if valid is not None:
-                handle.write('\n')
+        write_category_tickets( handle, categories, tickets, options )
 
     util.editFile( filename )
 
@@ -107,47 +96,119 @@ def handle_categories( settings, options, args ):
     return None
 
 
-def handle_consume( parser, options, args, settings ):
+def handle_tags( settings, options, args ):
+    # Load in all the tickets
+    tickets = tickets_mod.import_tickets( settings )
+    tags = tags_mod.import_tags( settings, show_hidden=True )
     categories = categories_mod.import_categories( settings )
 
-    tickets = []
+    filename = f"{settings['directory']}/bulk_tags.md"
 
-    # Read in all the tickets
-    for category in categories:
-        try:
-            with open(f'{settings["directory"]}/{category.name}.md') as handle:
-                # Loop while we have data to read
-                while not util.is_eof( handle ):
-                    if (ticket := tickets_mod.parse_ticket( settings, handle, category=category.name )) is None:
-                        break
+    # Setup my dictionaries
+    ticket_updates = {}
+    tickets_missed = {x.uid: x for x in tickets}
 
-                    tickets.append( ticket )
+    # Load up the file
+    with open(filename, "w") as handle:
+        for tag in tags:
+            handle.write(f"# #{tag.name.ljust(20)} {tag.title}\n\n")
 
-        except FileNotFoundError:
-            continue
+            if not options.invisible and tag.hidden:
+                continue
 
-    # Export all tickets processed from the report
-    new_count, update_count = tickets_mod.export_tickets( settings, tickets )
+            # Write out the tickets
+            valid = None
+            for ticket in tickets:
+                if tag.name in ticket.tags:
+                    valid = handle.write(f'* :{ticket.uid}  {ticket.title[:64]}\n')
 
-    print( f"Consumed {new_count} new tickets")
-    print( f"Consumed {update_count} updated tickets")
-    print( f"{len(tickets)} total tickets")
-    print()
+                    # Clean up missed tickets
+                    ticket_updates[ticket.uid] = ticket
+                    if ticket.uid in tickets_missed:
+                        del tickets_missed[ticket.uid]
+            if valid is not None:
+                handle.write('\n')
 
-    sprints = []
+        if len(tickets_missed) > 0:
+            handle.write("\n###### Tickets without tags ######\n\n")
+            write_category_tickets( handle, categories, tickets_missed.values(), options, include_empty=False )
 
-    # Read in the sprint
-    with open(f'{settings["directory"]}/sprints.md') as handle:
-        # Loop while we have data to read
-        while not util.is_eof(handle):
-            if (sprint := sprints_mod.parse_sprint( handle, None, None )) is None:
+    util.editFile( filename )
+
+    # Clear out all tags and setup the updates
+    for ticket in tickets:
+        ticket.tags = []
+
+    # Consume the file
+    tag = None
+    with open(filename) as handle:
+        for line in handle.readlines():
+            line = line.rstrip()
+
+            # Detect the tag
+            if (match := re.search(r'^#\s*\#(\w+)', line)) is not None:
+                tag = util.first( tags, lambda x: x.name == match.group(1) )
+                continue
+
+            if tag is None or \
+               re.search(r'======', line) is not None:
+                continue
+
+            if re.search(r'######', line) is not None:
                 break
 
-            sprints.append( sprint )
+            # Pull ticket data
+            if (match := re.search(r'^\s*[*]\s*(.*)$', line)) is not None:
+                parse = Parser()
+                parse.title = parse_mods( parse, match.group(1) )
 
-    # Export all sprints
-    sprints_mod.export_sprints( settings, sprints )
+                # Attempt to just find the ticket, if all that fails,
+                if (ticket := util.first( tickets, lambda x: x.uid == parse.uid )) is not None:
+                    pass
+                elif (ticket := util.first(tickets, lambda x: x.title == parse.title)) is not None:
+                    pass
+                elif parse.title is not None:
+                    ticket = tickets_mod.to_ticket( settings, parse, uid="hack" )
+                    ticket.uid = None
 
-    return handle_gen( parser, options, args, settings )
+                # Everything failed, this isn't a valid ticket line
+                else:
+                    continue
 
+                # Convert this ticket to this tag, and add it to the update list
+                ticket.tags.append( tag.name )
+                if ticket.uid is None:
+                    ticket_updates[tickets_mod.generate_uid(settings['directory'])] = ticket
+                else:
+                    ticket_updates[ticket.uid] = ticket
+
+    # Remove the temp file
+    os.remove(filename)
+    tickets_mod.export_tickets( settings, ticket_updates.values() )
+
+    return None
+
+
+def write_category_tickets( handle, categories, tickets, options, include_empty=True ):
+    for category in categories:
+        valid = None
+        if include_empty:
+            handle.write(f"# ^{category.name.ljust(20)} {category.title}\n\n")
+
+        if not options.invisible and not category.visible:
+            continue
+
+        # Write out the tickets
+        for ticket in tickets:
+            if ticket.category != category.name:
+                continue
+
+            # Write out the header later if we haven't yet?
+            if not include_empty and valid is None:
+                handle.write(f"# ^{category.name.ljust(20)} {category.title}\n\n")
+
+            # Write out the ticket
+            valid = handle.write(f'* :{ticket.uid}  {ticket.title[:64]}\n')
+        if valid is not None:
+            handle.write('\n')
 

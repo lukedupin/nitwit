@@ -2,7 +2,7 @@
 
 > ^accepted
 > @lukedupin
-> #bug #crash
+> #bug
 > $priority=0
 > $difficulty=0
 
