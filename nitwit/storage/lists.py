@@ -145,9 +145,6 @@ def export_list( settings, handle, lst, title_lookup={}, include_name=False ):
                 handle.write(f'* {active}:{ticket_uid.uid}{active}\n')
         handle.write("\n")
 
-    else:
-        handle.write("* \n\n")
-
     # Write out the user's notes
     for note in lst.notes:
         handle.write(f'{note}\n')

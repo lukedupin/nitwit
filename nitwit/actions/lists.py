@@ -102,9 +102,6 @@ def process_batch( settings, args, options ):
 
 
 def process_create( settings, args, options ):
-    tickets = tickets_mod.import_tickets( settings )
-    categories = categories_mod.import_categories( settings, show_invisible=True )
-
     lst = lists_mod.List()
     if len(args) > 0:
         lst.name = args[0]
@@ -116,42 +113,10 @@ def process_create( settings, args, options ):
     lst.owner = settings['username']
     lst.date = util.timeNow().strftime("%02m/%02d/%02Y")
 
-    # Open the temp file to write out lists
-    tmp = f"{settings['directory']}/lists.md"
-    with open(tmp, "w") as handle:
-        lists_mod.export_list( settings, handle, lst, include_name=True )
 
-        handle.write("\n###### Tickets ######\n\n")
-
-        bulk.write_category_tickets(handle, categories, tickets, show_invisible=False, include_empty=False)
-
-    # Start the editor
-    util.editFile( tmp )
-
-    # Wrapp up by parsing
-    lists = []
-    try:
-        with open(tmp) as handle:
-            # Loop while we have data to read
-            while not util.is_eof(handle):
-                if (lst := lists_mod.parse_list(settings, handle)) is None:
-                    break
-
-                lists.append( lst )
-        os.remove(tmp)
-
-    except FileNotFoundError:
-        os.remove(tmp)
-        print("Failed to create lst")
-        return None
-
-    # Write out the new lst
-    if len(lists) != 1:
-        print("Failed to create lst")
-        return None
-
-    lists_mod.export_lists( settings, lists )
-    print(f"Created lst: {lists[0].name}")
+    process_edit( settings, args, options, lst )
+    print(f"Created list")
+    return None
 
 
 def process_edit( settings, args, options, lst=None ):
@@ -162,10 +127,48 @@ def process_edit( settings, args, options, lst=None ):
             print(f"Couldn't find lst by: {lst_name}")
             return None
 
-    util.editFile( lst.filename )
+    tickets = tickets_mod.import_tickets( settings )
+    categories = categories_mod.import_categories( settings, show_invisible=True )
 
-    with open( lst.filename) as handle:
-        lst = lists_mod.parse_list( settings, handle, lst.name, lst.owner )
+    # Used for friendly named tickets and limiting overlapping tickets
+    title_lookup = {x.uid: x.title for x in tickets}
+    list_ticket_uids = {x.uid: True for x in lst.ticket_uids}
 
-    with open( lst.filename, "w") as handle:
-        lists_mod.export_list( settings, handle, lst )
+    # Open the temp file to write out lists
+    tmp = f"{settings['directory']}/lists.md"
+    with open(tmp, "w") as handle:
+        lists_mod.export_list(settings, handle, lst, title_lookup=title_lookup, include_name=True)
+
+        handle.write("\n###### Tickets ######\n\n")
+
+        bulk.write_category_tickets(handle, categories, [x for x in tickets if x.uid not in list_ticket_uids],
+                                    show_invisible=False,
+                                    include_empty=False)
+
+    # Start the editor
+    util.editFile(tmp)
+
+    # Wrapp up by parsing
+    lists = []
+    try:
+        with open(tmp) as handle:
+            # Loop while we have data to read
+            while not util.is_eof(handle):
+                if (lst := lists_mod.parse_list(settings, handle)) is None:
+                    break
+
+                lists.append(lst)
+        os.remove(tmp)
+
+    except FileNotFoundError:
+        os.remove(tmp)
+        print("Failed to create lst")
+        return None
+
+    # Write out the new lst
+    if len(lists) <= 0:
+        print("Failed to edit lst")
+        return None
+
+    lists_mod.export_lists(settings, lists)
+    return None
