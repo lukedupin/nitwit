@@ -130,10 +130,11 @@ def export_list( settings, handle, lst, title_lookup={}, include_name=False ):
     # Write out the mods
     if include_name:
         handle.write(f'> %{lst.name}\n')
-    handle.write(f'> @{lst.owner}\n')
     if lst.date is not None:
         handle.write(f'> $date={lst.date}\n')
     handle.write(f'> $active={util.xbool(lst.active)}\n\n')
+
+    handle.write(f'> @{lst.owner}\n\n')
 
     # Write out the subitems
     if len(lst.ticket_uids) > 0:

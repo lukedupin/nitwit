@@ -44,7 +44,7 @@ def process_print( settings, args, options ):
     # Dump the lists to the screen
     print("Lists")
     for idx, lst in enumerate(lists):
-        print(f'{str(idx+1).ljust(5)} #{lst.name.ljust(20)} {util.xstr(lst.title)[:64]}')
+        print(f'{str(idx+1).ljust(5)} %{lst.name.ljust(20)} {util.xstr(lst.title)[:64]}')
 
     return None
 
@@ -102,16 +102,19 @@ def process_batch( settings, args, options ):
 
 
 def process_create( settings, args, options ):
-    lst = lists_mod.List()
-    if len(args) > 0:
-        lst.name = args[0]
-        lst.title = re.sub('[_-]', ' ', ' '.join(args[1:]).capitalize())
+    lst_name = ' '.join(args)
+    if (lst := lists_mod.find_lst_by_name(settings, lst_name)) is None:
+        lst = lists_mod.List()
+        lst.date = util.timeNow( 6 * 7 * 24 * 3600 * 1000 ).strftime("%02Y-%02m-%02d")
+        lst.owner = settings['username']
 
-    else:
-        lst.name = "listname"
-        lst.title = re.sub('[_-]', ' ', lst.name.capitalize())
-    lst.owner = settings['username']
-    lst.date = util.timeNow().strftime("%02m/%02d/%02Y")
+        if len(args) > 0:
+            lst.name = args[0]
+            lst.title = re.sub('[_-]', ' ', ' '.join(args[1:]).capitalize())
+
+        else:
+            lst.name = f"sprint_{lst.date}"
+            lst.title = re.sub('[_-]', ' ', lst.name.capitalize())
 
 
     process_edit( settings, args, options, lst )
