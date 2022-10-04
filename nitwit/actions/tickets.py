@@ -199,11 +199,9 @@ def process_print( settings, args, options ):
         return False
 
     tickets = tickets_mod.import_tickets( settings )
-    if len(tickets) <= 0:
-        print( "No tickets found. Try creating one." )
-        return False
 
     # Dump the tickets to the screen
+    hit = False
     category = None
     for idx, ticket in enumerate(tickets):
         if not is_show_ticket(options, categories, ticket, limit_category, limit_tag):
@@ -216,6 +214,11 @@ def process_print( settings, args, options ):
             print()
 
         print(f'{str(idx+1).ljust(5)} :{ticket.uid.ljust(20)} {util.xstr(ticket.title)[:64]}')
+        hit = True
+
+    if not hit:
+        print( "No tickets found. Try creating one or rerun: nw tickets -a" )
+        return False
 
     return True
 
