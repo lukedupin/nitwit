@@ -1,8 +1,8 @@
 import re
 
-from nitwit.storage import sprints as sprints_mod
 from nitwit.storage import tickets as tickets_mod
 from nitwit.storage import tags as tags_mod
+from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 
 
@@ -19,12 +19,19 @@ class MsgFile:
 def handle_prepare_commit( settings, filename ):
     msg_file = process_msg_file( filename )
 
+    repo = settings_mod.git_repo()
+
     tags = {tag.name: tag for tag in tags_mod.import_tags( settings )}
     tickets = {t.uid: t for t in tickets_mod.import_tickets(settings)}
     ticket_hits = {}
 
+    # Get diffs of tickets
+    for ticket in tickets.values():
+        print( repo.index.diff("examples/tickets/7cd3e.md"))#ticket.filename))
+
     # Pull the sprints
-    sprints = sprints_mod.import_latest_sprints( settings, filter_owners=[settings['username']])
+    sprints = []
+    #sprints = sprints_mod.import_latest_sprints( settings, filter_owners=[settings['username']])
     if len(sprints) != 1:
         pass#return "Couldn't determine current sprint"
 
@@ -78,7 +85,8 @@ def write_ticket_line( handle, uid, ticket ):
         title = ticket.title
         cat = f'^{ticket.category}'
 
-    handle.write(f'#       ${uid}  {cat.ljust(16)} {title[:48]}\n')
+    handle.write(f'#       %{uid}  {cat.ljust(16)} {title[:48]}\n')
+
 
 def process_msg_file( filename ):
     msg_file = MsgFile()
