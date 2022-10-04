@@ -1,4 +1,4 @@
-import os, git, re, configparser
+import os, git, re, configparser, io
 
 from nitwit.helpers import util
 
@@ -115,3 +115,21 @@ def get_users( settings ):
         del users[settings['username']]
 
     return myself + [users[x] for x in users.keys()]
+
+
+class StringNameIO(io.StringIO):
+    def __init__(self, name, string):
+        self.name = name
+        super().__init__(string)
+
+
+def read_file_from_repo( filename, repo=None ):
+    if (dir := find_git_dir()) is None:
+        return None
+
+    if repo is None:
+        repo = git_repo()
+
+    trimmed = re.sub(f'^{dir}/?', '', filename)
+
+    return StringNameIO( filename, repo.git.show(f"{repo.commit()}:{trimmed}"))

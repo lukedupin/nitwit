@@ -1,6 +1,7 @@
 import re
 
 from nitwit.storage import tickets as tickets_mod
+from nitwit.storage import categories as categories_mod
 from nitwit.storage import tags as tags_mod
 from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
@@ -27,7 +28,11 @@ def handle_prepare_commit( settings, filename ):
 
     # Get diffs of tickets
     for ticket in tickets.values():
-        print( repo.index.diff("examples/tickets/7cd3e.md"))#ticket.filename))
+        handle = settings_mod.read_file_from_repo( ticket.filename, repo)
+        old = tickets_mod.parse_ticket( settings, handle, ticket.uid )
+        if len(ticket.notes) != len(old.notes):
+            print(f"Found diff on: {ticket.uid}")
+            print(ticket.notes[len(old.notes):])
 
     # Pull the sprints
     sprints = []
@@ -38,7 +43,6 @@ def handle_prepare_commit( settings, filename ):
     # Get the cats and tags we sub to
     categories = settings['subscribecategories']
     tag_names = settings['subscribetags']
-    hidden_categories = {x: True for x in settings['hiddencategories']}
 
     # Write out the file
     with open(filename, "w") as handle:
@@ -46,10 +50,10 @@ def handle_prepare_commit( settings, filename ):
         for line in msg_file.header:
             handle.write(line)
 
-        handle.write("# My current Sprint:\n")
-        for uid in sprints[0].ticket_uids:
-            ticket_hits[uid] = True
-            write_ticket_line( handle, uid, tickets.get(uid))
+        #handle.write("# My current Sprint:\n")
+        #for uid in sprints[0].ticket_uids:
+        #    ticket_hits[uid] = True
+        #    write_ticket_line( handle, uid, tickets.get(uid))
 
         handle.write("#\n")
 
@@ -67,7 +71,7 @@ def handle_prepare_commit( settings, filename ):
                     continue
 
                 ticket = tickets[uid]
-                if tag.name in ticket.tags and ticket.category not in hidden_categories:
+                if tag.name in ticket.tags and ticket.category in categories:
                     write_ticket_line( handle, uid, ticket )
             handle.write("#\n")
 
