@@ -58,7 +58,17 @@ def find_ticket_by_uid( settings, uid ):
 
 
 # Parse all tickets
-def import_tickets( settings, filter_uids=None ):
+def import_tickets( settings, filter_uids=None, filter_owners=None ):
+    if filter_uids is not None and \
+            not isinstance( filter_uids, list ) and \
+            not isinstance( filter_uids, dict ):
+        filter_uids = list( filter_uids )
+
+    if filter_owners is not None and \
+            not isinstance( filter_owners, list ) and \
+            not isinstance( filter_owners, dict ):
+        filter_owners = list( filter_owners )
+
     tickets = []
 
     # Read in all the tickets
@@ -70,7 +80,8 @@ def import_tickets( settings, filter_uids=None ):
 
         with open(file) as handle:
             if (ticket := parse_ticket( settings, handle, uid )) is not None:
-                tickets.append( ticket )
+                if filter_owners is None or any([True for x in ticket.owners if x in filter_owners]):
+                    tickets.append( ticket )
 
     return sorted( tickets, key=lambda x: (x.category.lower(), x.title.lower()) )
 

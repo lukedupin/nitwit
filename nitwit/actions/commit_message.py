@@ -20,13 +20,13 @@ class MsgFile:
 def handle_prepare_commit( settings, filename ):
     msg_file = process_msg_file( filename )
 
-    repo = settings_mod.git_repo()
-
+    raw_tickets = tickets_mod.import_tickets( settings, filter_owners=settings['username'])
     tags = {tag.name: tag for tag in tags_mod.import_tags( settings )}
-    tickets = {t.uid: t for t in tickets_mod.import_tickets(settings)}
+    tickets = {t.uid: t for t in raw_tickets}
     ticket_hits = {}
 
     # Get diffs of tickets
+    repo = settings_mod.git_repo()
     for ticket in tickets.values():
         handle = settings_mod.read_file_from_repo( ticket.filename, repo)
         old = tickets_mod.parse_ticket( settings, handle, ticket.uid )
@@ -41,7 +41,7 @@ def handle_prepare_commit( settings, filename ):
         pass#return "Couldn't determine current sprint"
 
     # Get the cats and tags we sub to
-    categories = settings['subscribecategories']
+    category_names = settings['subscribecategories']
     tag_names = settings['subscribetags']
 
     # Write out the file
@@ -58,7 +58,7 @@ def handle_prepare_commit( settings, filename ):
         handle.write("#\n")
 
         # Print out categories
-        #for cat in categories: for uid in tickets.keys():
+        #for cat_name in category_names:
 
         # Print out tags
         for tag_name in tag_names:

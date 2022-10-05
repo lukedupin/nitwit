@@ -1,8 +1,9 @@
 from nitwit.storage import categories, tags, tickets, lists
 from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
+from nitwit import hooks
 
-import random, os, git, configparser
+import random, os, git, configparser, shutil, re
 
 
 def handle_init( settings ):
@@ -29,8 +30,6 @@ def handle_init( settings ):
     if (conf := settings_mod.load_settings()) is None:
         return "Couldn't load settings_mod after initial attempt in Git repo"
 
-    print( f"Initialized nitwit configuration into Git repository in {dir}/.git")
-
     # Setup the default categories
     cats = []
     for name, accepted, visible in settings_mod.CATEGORIES:
@@ -52,6 +51,14 @@ def handle_init( settings ):
     tags.export_tags( conf, ts )
     tickets.export_tickets( conf, [] )
     lists.export_lists( conf, [] )
+
+    # Copy the hooks
+    hook_dir = re.sub('/[^/]+$', '', hooks.__file__)
+    for hook in ('prepare-commit-msg', ):
+        print(f"Installed hook {hook}")
+        shutil.copy(f"{hook_dir}/{hook}", f"{dir}/.git/hooks/{hook}")
+
+    print( f"Initialized nitwit configuration into Git repository in {dir}/.git")
 
     return None
 
