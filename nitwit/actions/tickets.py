@@ -85,7 +85,7 @@ def process_batch( settings, args, options ):
             if not is_show_ticket( options, categories, ticket, limit_category, limit_tag ):
                 continue
 
-            kill_list[ticket.uid] = True
+            kill_list[ticket.uid] = ticket
             tickets_mod.export_ticket( settings, handle, ticket, include_uid=True )
 
             if idx + 1 < len(tickets):
@@ -103,6 +103,8 @@ def process_batch( settings, args, options ):
                 if (ticket := tickets_mod.parse_ticket(settings, handle)) is None:
                     break
 
+                if ticket.uid is None:
+                    print(f"Creating new ticket: {ticket.title}")
                 tickets.append( ticket )
                 if ticket.uid in kill_list:
                     del kill_list[ticket.uid]
@@ -114,6 +116,7 @@ def process_batch( settings, args, options ):
     if (repo := settings_mod.git_repo()) is not None:
         for rm in kill_list.keys():
             try:
+                print(f"Removing ticket: {kill_list[rm]}")
                 repo.index.move([f'{settings["directory"]}/tickets/{rm}.md', f'{settings["directory"]}/tickets/{rm}.md_'])
 
             except GitCommandError:

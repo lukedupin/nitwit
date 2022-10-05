@@ -22,6 +22,9 @@ class Ticket:
         self.subitems = []
         self.notes = []
 
+    def has_content(self):
+        return self.uid is not None or self.title is not None
+
 
 def generate_uid( base_dir ):
     for _ in range(32):
@@ -109,21 +112,23 @@ def export_tickets( settings, tickets ):
 
 # Pass in an open filehandle and we'll generate a ticket
 def parse_ticket( settings, handle, uid=None ):
-    if (parser := parse_content( handle )) is None and uid is None:
+    if (parser := parse_content( handle )) is None:
         return None
 
     return to_ticket( settings, parser, uid, handle.name )
 
 
 def to_ticket( settings, parser, uid=None, filename=None ):
+    # Make sure we have valid content
+    if parser is None or not parser.has_content():
+        return None
+
     ticket = Ticket()
 
     # Store the name
     ticket.uid = uid
     if uid is None and parser.uid is not None:
         ticket.uid = parser.uid
-    if ticket.uid is None:
-        return None
 
     # store teh variables
     for key in ('priority', 'difficulty'):
