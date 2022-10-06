@@ -1,6 +1,6 @@
 # A more detailed ticket
 
-> ^accepted
+> ^trash
 > @lukedupin
 > #bug
 > $priority=0

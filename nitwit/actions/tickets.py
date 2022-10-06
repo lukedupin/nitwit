@@ -25,23 +25,23 @@ def handle_ticket( settings ):
 
     # edit all the tickets
     if options.batch:
-        return process_batch( settings, args, options )
+        return process_batch( settings, options, args )
 
     # Create a new ticket
     if options.create:
         name = args[0] if len(args) >= 1 else None
         ticket = tickets_mod.find_ticket_by_uid( settings, name )
         if ticket is None:
-            return process_create( settings, args, options )
+            return process_create( settings, options, args )
         else:
-            return process_edit( settings, args, options, ticket )
+            return process_edit( settings, options, args, ticket )
 
     # Edit a ticket?
-    if process_edit( settings, args, options ):
+    if process_edit( settings, options, args ):
         pass
 
     # Print out the tickets
-    elif process_print( settings, args, options ):
+    elif process_print( settings, options, args ):
         pass
 
     else:
@@ -65,7 +65,7 @@ def is_show_ticket( options, categories, ticket, limit_category, limit_tag ):
     return options.all or util.xbool(options.unaccepted) != cat.accepted
 
 
-def process_batch( settings, args, options ):
+def process_batch( settings, options, args ):
     categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
     tags = {x.name: x for x in tags_mod.import_tags( settings, show_hidden=True )}
 
@@ -129,7 +129,7 @@ def process_batch( settings, args, options ):
     return None
 
 
-def process_create( settings, args, options ):
+def process_create( settings, options, args ):
     ticket = tickets_mod.Ticket()
     if len(args) > 0:
         ticket.title = re.sub('[_-]', ' ', ' '.join(args).capitalize())
@@ -177,7 +177,7 @@ def process_create( settings, args, options ):
     print(f"Created ticket: {tickets[0].title}")
 
 
-def process_edit( settings, args, options, ticket=None ):
+def process_edit( settings, options, args, ticket=None ):
     if len(args) <= 0:
         return False
 
@@ -188,10 +188,17 @@ def process_edit( settings, args, options, ticket=None ):
             return False
 
     util.editFile( ticket.filename )
+
+    # Reformat the ticket
+    if (new_ticket := tickets_mod.find_ticket_by_uid( settings, ticket.uid )) is None:
+        return False
+
+    tickets_mod.export_tickets( settings, [new_ticket] )
+
     return True
 
 
-def process_print( settings, args, options ):
+def process_print( settings, options, args ):
     categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
     tags = {x.name: x for x in tags_mod.import_tags( settings, show_hidden=True )}
 

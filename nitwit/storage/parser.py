@@ -160,3 +160,28 @@ def parse_mods( result, line ):
 
     remains = ' '.join(ary)
     return remains if re.search(r'[^\w]', remains) is not None else None
+
+
+def write_category_tickets( handle, categories, tickets, show_invisible=False, include_empty=True ):
+    for category in categories:
+        valid = None
+        if include_empty:
+            handle.write(f"# ^{category.name.ljust(20)} {category.title}\n\n")
+
+        if not show_invisible and not category.visible:
+            continue
+
+        # Write out the tickets
+        for ticket in tickets:
+            if ticket.category != category.name:
+                continue
+
+            # Write out the header later if we haven't yet?
+            if not include_empty and valid is None:
+                handle.write(f"# ^{category.name.ljust(20)} {category.title}\n\n")
+
+            # Write out the ticket
+            valid = handle.write(f'* :{ticket.uid}  {ticket.title[:64]}\n')
+        if valid is not None:
+            handle.write('\n')
+

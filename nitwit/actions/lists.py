@@ -24,17 +24,17 @@ def handle_list( settings ):
 
     # Create a new lst
     if options.create:
-        return process_create( settings, args, options )
+        return process_create( settings, options, args )
 
     # Edit a lst?
     if len(args) > 0:
-        return process_edit( settings, args, options )
+        return process_edit( settings, options, args )
 
     # Print out the lists
-    return process_print( settings, args, options )
+    return process_print( settings, options, args )
 
 
-def process_print( settings, args, options ):
+def process_print( settings, options, args ):
     owners = [settings['username']] if not options.everyone else None
     active = True if not options.active else None
     lists = lists_mod.import_lists( settings, filter_owners=owners, active=active )
@@ -49,7 +49,7 @@ def process_print( settings, args, options ):
     return None
 
 
-def process_batch( settings, args, options ):
+def process_batch( settings, options, args ):
     lists = lists_mod.import_lists(settings, show_hidden=options.all)
     if len(lists) <= 0:
         return "No lists found. Try creating one."
@@ -101,7 +101,7 @@ def process_batch( settings, args, options ):
     return None
 
 
-def process_create( settings, args, options ):
+def process_create( settings, options, args ):
     lst_name = ' '.join(args)
     if (lst := lists_mod.find_lst_by_name(settings, lst_name)) is None:
         lst = lists_mod.List()
@@ -117,12 +117,12 @@ def process_create( settings, args, options ):
             lst.title = re.sub('[_-]', ' ', lst.name.capitalize())
 
 
-    process_edit( settings, args, options, lst )
+    process_edit( settings, options, args, lst )
     print(f"Created list")
     return None
 
 
-def process_edit( settings, args, options, lst=None ):
+def process_edit( settings, options, args, lst=None ):
     if lst is None:
         lst_name = ' '.join(args)
         lst = lists_mod.find_lst_by_name( settings, lst_name )

@@ -21,25 +21,25 @@ def handle_tag( settings ):
 
     # Edit all the tags
     if options.batch:
-        return process_batch( settings, args, options )
+        return process_batch( settings, options, args )
 
     # Create a new tag
     if options.create:
         tag = tags_mod.find_tag_by_name( settings, ' '.join(args), show_hidden=options.all)
         if tag is None:
-            return process_create( settings, args, options )
+            return process_create( settings, options, args )
         else:
-            return process_edit( settings, args, options, tag )
+            return process_edit( settings, options, args, tag )
 
     # Edit a tag?
     if len(args) > 0:
-        return process_edit( settings, args, options )
+        return process_edit( settings, options, args )
 
     # Print out the tags
-    return process_print( settings, args, options )
+    return process_print( settings, options, args )
 
 
-def process_print( settings, args, options ):
+def process_print( settings, options, args ):
     tags = sorted( tags_mod.import_tags( settings, show_hidden=options.all ), key=lambda x: x.name )
     if len(tags) <= 0:
         print( "No tags found. Try creating one." )
@@ -52,7 +52,7 @@ def process_print( settings, args, options ):
     return None
 
 
-def process_batch( settings, args, options ):
+def process_batch( settings, options, args ):
     tags = tags_mod.import_tags(settings, show_hidden=options.all)
     if len(tags) <= 0:
         return "No tags found. Try creating one."
@@ -104,7 +104,7 @@ def process_batch( settings, args, options ):
     return None
 
 
-def process_create( settings, args, options ):
+def process_create( settings, options, args ):
     tag = tags_mod.Tag()
     if len(args) > 0:
         tag.name = args[0]
@@ -148,7 +148,7 @@ def process_create( settings, args, options ):
     print(f"Created tag: {tags[0].name}")
 
 
-def process_edit( settings, args, options, tag=None ):
+def process_edit( settings, options, args, tag=None ):
     if tag is None:
         tag_name = ' '.join(args)
         tag = tags_mod.find_tag_by_name( settings, tag_name, show_hidden=options.all )
@@ -157,3 +157,9 @@ def process_edit( settings, args, options, tag=None ):
             return None
 
     util.editFile( tag.filename )
+
+    # Re-export
+    if (new_tag := tags_mod.find_tag_by_name( settings, tag.name, show_hidden=True )) is None:
+        return None
+
+    tags_mod.export_tags( settings, [new_tag] )
