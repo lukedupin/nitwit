@@ -27,6 +27,7 @@ def handle_prepare_commit( settings, filename ):
     ticket_hits = {}
 
     # Get diffs of tickets
+    change_title = []
     changes = []
     repo = settings_mod.git_repo()
     for ticket in tickets.values():
@@ -38,7 +39,8 @@ def handle_prepare_commit( settings, filename ):
         offset = len(existing.notes) if existing else 0
 
         # Store the changes!
-        changes.append( ticket.title )
+        change_title.append( f":{ticket.uid}" )
+        changes.append( f":{ticket.uid}   {ticket.title}" )
         changes.append( "" )
         changes += ticket.notes[offset:]
         changes.append( "" )
@@ -55,8 +57,10 @@ def handle_prepare_commit( settings, filename ):
 
     # Write out the file
     with open(filename, "w") as handle:
-        for line in changes:
-            handle.write(f"{line}\n")
+        if len(change_title) > 0:
+            handle.write(f"Ticket changes: {' '.join(change_title)}\n\n")
+            for line in changes:
+                handle.write(f"{line}\n")
 
         handle.write("\n")
         for line in msg_file.header:
