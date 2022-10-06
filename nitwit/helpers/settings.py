@@ -1,5 +1,7 @@
 import os, git, re, configparser, io
 
+from git import GitCommandError
+
 from nitwit.helpers import util
 
 
@@ -132,4 +134,8 @@ def read_file_from_repo( filename, repo=None ):
 
     trimmed = re.sub(f'^{dir}/?', '', filename)
 
-    return StringNameIO( filename, repo.git.show(f"{repo.commit()}:{trimmed}"))
+    try:
+        return StringNameIO( filename, repo.git.show(f"{repo.commit()}:{trimmed}"))
+
+    except GitCommandError:
+        return StringNameIO( filename, "")

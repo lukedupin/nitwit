@@ -20,19 +20,28 @@ class MsgFile:
 def handle_prepare_commit( settings, filename ):
     msg_file = process_msg_file( filename )
 
+    categories = categories_mod.import_categories(settings)
+
     raw_tickets = tickets_mod.import_tickets( settings, filter_owners=settings['username'])
-    tags = {tag.name: tag for tag in tags_mod.import_tags( settings )}
     tickets = {t.uid: t for t in raw_tickets}
     ticket_hits = {}
 
     # Get diffs of tickets
+    changes = []
     repo = settings_mod.git_repo()
     for ticket in tickets.values():
         handle = settings_mod.read_file_from_repo( ticket.filename, repo)
-        old = tickets_mod.parse_ticket( settings, handle, ticket.uid )
-        if len(ticket.notes) != len(old.notes):
-            print(f"Found diff on: {ticket.uid}")
-            print(ticket.notes[len(old.notes):])
+        existing = tickets_mod.parse_ticket( settings, handle, ticket.uid )
+        if existing is not None and len(ticket.notes) == len(existing.notes):
+            continue
+
+        offset = len(existing.notes) if existing else 0
+
+        # Store the changes!
+        changes.append( ticket.title )
+        changes.append( "" )
+        changes += ticket.notes[offset:]
+        changes.append( "" )
 
     # Pull the sprints
     sprints = []
@@ -46,6 +55,9 @@ def handle_prepare_commit( settings, filename ):
 
     # Write out the file
     with open(filename, "w") as handle:
+        for line in changes:
+            handle.write(f"{line}\n")
+
         handle.write("\n")
         for line in msg_file.header:
             handle.write(line)
@@ -55,12 +67,25 @@ def handle_prepare_commit( settings, filename ):
         #    ticket_hits[uid] = True
         #    write_ticket_line( handle, uid, tickets.get(uid))
 
-        handle.write("#\n")
-
         # Print out categories
-        #for cat_name in category_names:
+        for category in categories:
+            first = True
+            for ticket in tickets.values():
+                if category.name != ticket.category:
+                    continue
+
+                # Print out the header
+                if first:
+                    handle.write( f"#    ^{category.name.ljust(16)} {util.xstr(category.title)[:48]}\n")
+                    first = False
+
+                write_ticket_line( handle, ticket )
+
+            if not first:
+                handle.write("#\n")
 
         # Print out tags
+        dog = '''
         for tag_name in tag_names:
             if (tag := tags.get(tag_name)) is None:
                 tag = tags_mod.Tag(None, tag_name)
@@ -74,6 +99,7 @@ def handle_prepare_commit( settings, filename ):
                 if tag.name in ticket.tags and ticket.category in categories:
                     write_ticket_line( handle, uid, ticket )
             handle.write("#\n")
+        '''
 
         # Add the common message
         for line in msg_file.contents:
@@ -82,14 +108,8 @@ def handle_prepare_commit( settings, filename ):
     return None
 
 
-def write_ticket_line( handle, uid, ticket ):
-    title = ""
-    cat = ""
-    if ticket is not None:
-        title = ticket.title
-        cat = f'^{ticket.category}'
-
-    handle.write(f'#       %{uid}  {cat.ljust(16)} {title[:48]}\n')
+def write_ticket_line( handle, ticket ):
+    handle.write(f'# %{util.xstr(ticket.uid)}  {util.xstr(ticket.title)[:48]}\n')
 
 
 def process_msg_file( filename ):

@@ -80,7 +80,7 @@ def import_categories( settings, filter_names=None, show_invisible=False ):
     return categories
 
 
-# Export all sprints
+# Export all categories
 def export_categories( settings, categories ):
     # Create the categories
     dir = f"{settings['directory']}/categories"

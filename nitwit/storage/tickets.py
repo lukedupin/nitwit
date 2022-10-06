@@ -62,12 +62,12 @@ def import_tickets( settings, filter_uids=None, filter_owners=None ):
     if filter_uids is not None and \
             not isinstance( filter_uids, list ) and \
             not isinstance( filter_uids, dict ):
-        filter_uids = list( filter_uids )
+        filter_uids = [filter_uids]
 
     if filter_owners is not None and \
             not isinstance( filter_owners, list ) and \
             not isinstance( filter_owners, dict ):
-        filter_owners = list( filter_owners )
+        filter_owners = [filter_owners]
 
     tickets = []
 
