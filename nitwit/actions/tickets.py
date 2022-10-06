@@ -2,6 +2,7 @@ from optparse import OptionParser
 
 from git import GitCommandError
 
+from nitwit.storage.parser import Parser, parse_mods, parse_content, write_category_tickets
 from nitwit.storage import categories as categories_mod
 from nitwit.storage import tags as tags_mod
 from nitwit.storage import tickets as tickets_mod
@@ -19,6 +20,9 @@ def handle_ticket( settings ):
     parser.add_option("-u", "--unaccepted", action="store_true", dest="unaccepted", help="Show only unaccepted")
     parser.add_option("-i", "--invisible", action="store_true", dest="invisible", help="Show invisible tickets")
     parser.add_option("-b", "--batch", action="store_true", dest="batch", help="Edit all tickets at once")
+    parser.add_option("--cat", "--category", "--categories", action="store_true", dest="categories", help="Edit all tickets relative to categories")
+    parser.add_option("--tag", "--tags", action="store_true", dest="tags", help="Edit all tickets relative to tags")
+    parser.add_option("--user", "--username", "--usernames", action="store_true", dest="usernames", help="Edit all tickets relative to usernames")
 
     (options, args) = parser.parse_args()
     args = args[1:] # Cut away the action name, since its always "Ticket"
@@ -26,6 +30,15 @@ def handle_ticket( settings ):
     # edit all the tickets
     if options.batch:
         return process_batch( settings, options, args )
+
+    if options.categories:
+        return process_categories( settings, options, args )
+
+    if options.tags:
+        return process_tags( settings, options, args )
+
+    if options.usernames:
+        return process_usernames( settings, options, args )
 
     # Create a new ticket
     if options.create:
@@ -232,3 +245,158 @@ def process_print( settings, options, args ):
 
     return True
 
+
+def process_categories( settings, options, args ):
+    # Load in all the tickets
+    tickets = tickets_mod.import_tickets( settings )
+    categories = categories_mod.import_categories( settings, show_invisible=True )
+
+    filename = f"{settings['directory']}/bulk_categories.md"
+
+    # Load up the file
+    with open(filename, "w") as handle:
+        write_category_tickets( handle, categories, tickets, options.invisible )
+
+    util.editFile( filename )
+
+    ticket_updates = []
+
+    # Consume the file
+    category = None
+    with open(filename) as handle:
+        for line in handle.readlines():
+            line = line.rstrip()
+
+            # Detect the category
+            if (match := re.search(r'^#\s*\^(\w+)', line)) is not None:
+                category = util.first( categories, lambda x: x.name == match.group(1) )
+                continue
+
+            if category is None or \
+                    re.search(r'======', line) is not None:
+                continue
+
+            # Pull ticket data
+            if (match := re.search(r'^\s*[*]\s*(.*)$', line)) is not None:
+                parse = Parser()
+                parse.title = parse_mods( parse, match.group(1) )
+
+                # Attempt to just find the ticket, if all that fails,
+                if (ticket := util.first( tickets, lambda x: x.uid == parse.uid )) is not None:
+                    pass
+                elif (ticket := util.first(tickets, lambda x: x.title == parse.title)) is not None:
+                    pass
+                elif parse.title is not None:
+                    ticket = tickets_mod.to_ticket( settings, parse, uid="hack" )
+                    ticket.uid = None
+
+                # Everything failed, this isn't a valid ticket line
+                else:
+                    continue
+
+                # Convert this ticket to this category, and add it to the update list
+                ticket.category = category.name
+                ticket_updates.append( ticket )
+
+    # Remove the temp file
+    os.remove(filename)
+    tickets_mod.export_tickets( settings, ticket_updates )
+
+    return None
+
+
+def process_tags( settings, options, args ):
+    # Load in all the tickets
+    tickets = tickets_mod.import_tickets( settings )
+    tags = tags_mod.import_tags( settings, show_hidden=True )
+    categories = categories_mod.import_categories( settings )
+
+    filename = f"{settings['directory']}/bulk_tags.md"
+
+    # Setup my dictionaries
+    ticket_updates = {}
+    tickets_missed = {x.uid: x for x in tickets}
+
+    # Load up the file
+    with open(filename, "w") as handle:
+        for tag in tags:
+            handle.write(f"# #{tag.name.ljust(20)} {tag.title}\n\n")
+
+            if not options.invisible and tag.hidden:
+                continue
+
+            # Write out the tickets
+            valid = None
+            for ticket in tickets:
+                if tag.name in ticket.tags:
+                    valid = handle.write(f'* :{ticket.uid}  {ticket.title[:64]}\n')
+
+                    # Clean up missed tickets
+                    ticket_updates[ticket.uid] = ticket
+                    if ticket.uid in tickets_missed:
+                        del tickets_missed[ticket.uid]
+            if valid is not None:
+                handle.write('\n')
+
+        if len(tickets_missed) > 0:
+            handle.write("\n###### Tickets without tags ######\n\n")
+            write_category_tickets( handle, categories, tickets_missed.values(), options.invisible, include_empty=False )
+
+    util.editFile( filename )
+
+    # Clear out all tags and setup the updates
+    for ticket in tickets:
+        ticket.tags = []
+
+    # Consume the file
+    tag = None
+    with open(filename) as handle:
+        for line in handle.readlines():
+            line = line.rstrip()
+
+            # Detect the tag
+            if (match := re.search(r'^#\s*\#(\w+)', line)) is not None:
+                tag = util.first( tags, lambda x: x.name == match.group(1) )
+                continue
+
+            if tag is None or \
+               re.search(r'======', line) is not None:
+                continue
+
+            if re.search(r'######', line) is not None:
+                break
+
+            # Pull ticket data
+            if (match := re.search(r'^\s*[*]\s*(.*)$', line)) is not None:
+                parse = Parser()
+                parse.title = parse_mods( parse, match.group(1) )
+
+                # Attempt to just find the ticket, if all that fails,
+                if (ticket := util.first( tickets, lambda x: x.uid == parse.uid )) is not None:
+                    pass
+                elif (ticket := util.first(tickets, lambda x: x.title == parse.title)) is not None:
+                    pass
+                elif parse.title is not None:
+                    ticket = tickets_mod.to_ticket( settings, parse, uid="hack" )
+                    ticket.uid = None
+
+                # Everything failed, this isn't a valid ticket line
+                else:
+                    continue
+
+                # Convert this ticket to this tag, and add it to the update list
+                ticket.tags.append( tag.name )
+                if ticket.uid is None:
+                    ticket_updates[tickets_mod.generate_uid(settings['directory'])] = ticket
+                else:
+                    ticket_updates[ticket.uid] = ticket
+
+    # Remove the temp file
+    os.remove(filename)
+    tickets_mod.export_tickets( settings, ticket_updates.values() )
+
+    return None
+
+
+def process_usernames( settings, options, args ):
+    pass

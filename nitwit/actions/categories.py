@@ -17,14 +17,9 @@ def handle_category( settings ):
     parser.add_option("-c", "--create", action="store_true", dest="create", help="Create a new item")
     parser.add_option("-b", "--batch", action="store_true", dest="batch", help="Edit all categories at once")
     parser.add_option("-i", "--invisible", action="store_true", dest="invisible", help="Show invisible tickets")
-    parser.add_option("-t", "--tickets", action="store_true", dest="tickets", help="Edit tickets based on categories")
 
     (options, args) = parser.parse_args()
     args = args[1:] # Cut away the action name, since its always "Category"
-
-    # Edit all the tickets
-    if options.tickets:
-        return process_tickets( settings, options, args )
 
     # Edit all the categories
     if options.batch:
@@ -170,62 +165,3 @@ def process_edit( settings, options, args, category=None ):
         return None
 
     categories_mod.export_categories( settings, [new_cat] )
-
-
-def process_tickets( settings, options, args ):
-    # Load in all the tickets
-    tickets = tickets_mod.import_tickets( settings )
-    categories = categories_mod.import_categories( settings, show_invisible=True )
-
-    filename = f"{settings['directory']}/bulk_categories.md"
-
-    # Load up the file
-    with open(filename, "w") as handle:
-        write_category_tickets( handle, categories, tickets, options.invisible )
-
-    util.editFile( filename )
-
-    ticket_updates = []
-
-    # Consume the file
-    category = None
-    with open(filename) as handle:
-        for line in handle.readlines():
-            line = line.rstrip()
-
-            # Detect the category
-            if (match := re.search(r'^#\s*\^(\w+)', line)) is not None:
-                category = util.first( categories, lambda x: x.name == match.group(1) )
-                continue
-
-            if category is None or \
-               re.search(r'======', line) is not None:
-                continue
-
-            # Pull ticket data
-            if (match := re.search(r'^\s*[*]\s*(.*)$', line)) is not None:
-                parse = Parser()
-                parse.title = parse_mods( parse, match.group(1) )
-
-                # Attempt to just find the ticket, if all that fails,
-                if (ticket := util.first( tickets, lambda x: x.uid == parse.uid )) is not None:
-                    pass
-                elif (ticket := util.first(tickets, lambda x: x.title == parse.title)) is not None:
-                    pass
-                elif parse.title is not None:
-                    ticket = tickets_mod.to_ticket( settings, parse, uid="hack" )
-                    ticket.uid = None
-
-                # Everything failed, this isn't a valid ticket line
-                else:
-                    continue
-
-                # Convert this ticket to this category, and add it to the update list
-                ticket.category = category.name
-                ticket_updates.append( ticket )
-
-    # Remove the temp file
-    os.remove(filename)
-    tickets_mod.export_tickets( settings, ticket_updates )
-
-    return None
