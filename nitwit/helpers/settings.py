@@ -8,6 +8,7 @@ from nitwit.helpers import util
 ## Defines the configuration section of the git file
 NAMESPACE = 'nitwit'
 CONF = [
+    ('editor',              'vim', util.xstr),
     ('directory',           'nitwit', util.xstr),
     ('subscribecategories', 'accepted', lambda x: util.xstr(x).split(',')),
     ('subscribetags',       'bug,crash', lambda x: util.xstr(x).split(',')),

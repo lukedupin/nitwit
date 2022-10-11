@@ -70,7 +70,7 @@ def process_batch( settings, options, args ):
                 handle.write("======\n\n")
 
     # Start the editor
-    util.editFile( filename )
+    util.editFile( settings, filename )
 
     # Wrapp up by parsing
     tags = []
@@ -120,7 +120,7 @@ def process_create( settings, options, args ):
         tags_mod.export_tag( settings, handle, tag, include_name=True )
 
     # Start the editor
-    util.editFile( tmp )
+    util.editFile( settings, tmp )
 
     # Wrapp up by parsing
     tags = []
@@ -156,7 +156,7 @@ def process_edit( settings, options, args, tag=None ):
             print(f"Couldn't find tag by: {tag_name}")
             return None
 
-    util.editFile( tag.filename )
+    util.editFile( settings, tag.filename )
 
     # Re-export
     if (new_tag := tags_mod.find_tag_by_name( settings, tag.name, show_invisible=True )) is None:

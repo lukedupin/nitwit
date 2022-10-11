@@ -72,7 +72,7 @@ def process_batch( settings, options, args ):
                 handle.write("======\n\n")
 
     # Start the editor
-    util.editFile( filename )
+    util.editFile( settings, filename )
 
     # Wrapp up by parsing
     categories = []
@@ -122,7 +122,7 @@ def process_create( settings, options, args ):
         categories_mod.export_category( settings, handle, category, include_name=True )
 
     # Start the editor
-    util.editFile( tmp )
+    util.editFile( settings, tmp )
 
     # Wrapp up by parsing
     categories = []
@@ -158,7 +158,7 @@ def process_edit( settings, options, args, category=None ):
             print(f"Couldn't find category by: {category_name}")
             return None
 
-    util.editFile( category.filename )
+    util.editFile( settings, category.filename )
 
     # Re-export
     if (new_cat := categories_mod.find_category_by_name( settings, category.name, show_invisible=options.invisible )) is None:

@@ -67,7 +67,7 @@ def process_batch( settings, options, args ):
                 handle.write("======\n\n")
 
     # Start the editor
-    util.editFile( filename )
+    util.editFile( settings, filename )
 
     # Wrapp up by parsing
     lists = []
@@ -152,7 +152,7 @@ def process_edit( settings, options, args, lst=None ):
                                include_empty=False)
 
     # Start the editor
-    util.editFile(tmp)
+    util.editFile( settings, tmp)
 
     # Wrapp up by parsing
     lists = []

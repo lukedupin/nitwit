@@ -106,7 +106,7 @@ def process_batch( settings, options, args ):
                 handle.write("======\n\n")
 
     # Start the editor
-    util.editFile( filename )
+    util.editFile( settings, filename )
 
     # Wrapp up by parsing
     tickets = []
@@ -162,7 +162,7 @@ def process_create( settings, options, args ):
         tickets_mod.export_ticket( settings, handle, ticket )
 
     # Start the editor
-    util.editFile( tmp )
+    util.editFile( settings, tmp )
 
     # Wrapp up by parsing
     tickets = []
@@ -201,7 +201,7 @@ def process_edit( settings, options, args, ticket=None ):
         if ticket is None:
             return False
 
-    util.editFile( ticket.filename )
+    util.editFile( settings, ticket.filename )
 
     # Reformat the ticket
     if (new_ticket := tickets_mod.find_ticket_by_uid( settings, ticket.uid )) is None:
@@ -278,7 +278,7 @@ def process_categories( settings, options, args ):
     with open(filename, "w") as handle:
         write_category_tickets( handle, categories, tickets, options.invisible )
 
-    util.editFile( filename )
+    util.editFile( settings, filename )
 
     ticket_updates = []
 
@@ -363,7 +363,7 @@ def process_tags( settings, options, args ):
             handle.write("\n###### Tickets without tags ######\n\n")
             write_category_tickets( handle, categories, tickets_missed.values(), options.invisible, include_empty=False )
 
-    util.editFile( filename )
+    util.editFile( settings, filename )
 
     # Clear out all tags and setup the updates
     for ticket in tickets:
