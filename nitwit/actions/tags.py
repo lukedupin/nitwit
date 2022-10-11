@@ -40,7 +40,7 @@ def handle_tag( settings ):
 
 
 def process_print( settings, options, args ):
-    tags = sorted( tags_mod.import_tags( settings, show_hidden=options.all ), key=lambda x: x.name )
+    tags = tags_mod.import_tags( settings, show_hidden=options.all )
     if len(tags) <= 0:
         print( "No tags found. Try creating one." )
 

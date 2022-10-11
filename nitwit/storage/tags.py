@@ -55,7 +55,7 @@ def import_tags( settings, filter_names=None, show_hidden=False ):
                 if show_hidden or not tag.hidden:
                     tags.append( tag )
 
-    return sorted( tags, key=lambda x: x.name.lower() )
+    return sorted( tags, key=lambda x: (x.hidden, x.name.lower()) )
 
 
 # Export all tags
