@@ -6,6 +6,7 @@ from nitwit.storage.parser import Parser, parse_mods, parse_content, write_categ
 from nitwit.storage import categories as categories_mod
 from nitwit.storage import tags as tags_mod
 from nitwit.storage import tickets as tickets_mod
+from nitwit.storage import lists as lists_mod
 from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 
@@ -214,6 +215,7 @@ def process_edit( settings, options, args, ticket=None ):
 def process_print( settings, options, args ):
     categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
     tags = {x.name: x for x in tags_mod.import_tags( settings, show_invisible=True )}
+    my_lists = lists_mod.import_lists( settings, filter_owners=[settings['username']])
 
     limit_category = categories.get(args[0]) if len(args) > 0 else None
     limit_tag = tags.get(args[0]) if len(args) > 0 else None
@@ -222,6 +224,25 @@ def process_print( settings, options, args ):
         return False
 
     tickets = tickets_mod.import_tickets( settings )
+
+    # Dump the active lists
+    offset = 0
+    for lst in my_lists:
+        ticket_list = {x.uid: x for x in lst.ticket_uids if x.active}
+        print()
+        print(f"   %{lst.name.ljust(20)} {util.xstr(lst.title[:64])}")
+        print()
+
+        hit = False
+        for idx, ticket in enumerate(tickets):
+            if ticket.uid not in ticket_list:
+                continue
+
+            print( f'{"".ljust(5)} :{ticket.uid.ljust(20)} {util.xstr(ticket.title)[:64]}')
+            hit = True
+
+        if not hit:
+            print("No open items in list.")
 
     # Dump the tickets to the screen
     hit = False
