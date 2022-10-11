@@ -80,7 +80,7 @@ def is_show_ticket( options, categories, ticket, limit_category, limit_tag ):
 
 def process_batch( settings, options, args ):
     categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
-    tags = {x.name: x for x in tags_mod.import_tags( settings, show_hidden=True )}
+    tags = {x.name: x for x in tags_mod.import_tags( settings, show_invisible=True )}
 
     limit_category = categories.get(args[0]) if len(args) > 0 else None
     limit_tag = tags.get(args[0]) if len(args) > 0 else None
@@ -213,7 +213,7 @@ def process_edit( settings, options, args, ticket=None ):
 
 def process_print( settings, options, args ):
     categories = {x.name: x for x in categories_mod.import_categories( settings, show_invisible=True )}
-    tags = {x.name: x for x in tags_mod.import_tags( settings, show_hidden=True )}
+    tags = {x.name: x for x in tags_mod.import_tags( settings, show_invisible=True )}
 
     limit_category = categories.get(args[0]) if len(args) > 0 else None
     limit_tag = tags.get(args[0]) if len(args) > 0 else None
@@ -308,7 +308,7 @@ def process_categories( settings, options, args ):
 def process_tags( settings, options, args ):
     # Load in all the tickets
     tickets = tickets_mod.import_tickets( settings )
-    tags = tags_mod.import_tags( settings, show_hidden=True )
+    tags = tags_mod.import_tags( settings, show_invisible=True )
     categories = categories_mod.import_categories( settings )
 
     filename = f"{settings['directory']}/bulk_tags.md"
@@ -322,7 +322,7 @@ def process_tags( settings, options, args ):
         for tag in tags:
             handle.write(f"# #{tag.name.ljust(20)} {tag.title}\n\n")
 
-            if not options.invisible and tag.hidden:
+            if not options.invisible and tag.invisible:
                 continue
 
             # Write out the tickets

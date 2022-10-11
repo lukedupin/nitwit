@@ -14,15 +14,15 @@ class Tag:
         self.name = None
         self.title = None
         self.notes = []
-        self.hidden = False
+        self.invisible = False
 
 
 ### Bulk commands for parsing and writing to the filesystem
 
 
-def find_tag_by_name( settings, name, show_hidden=False ):
+def find_tag_by_name( settings, name, show_invisible=False ):
     # Fastest, look for a specific one
-    tags = import_tags( settings, filter_names=[util.xstr(name)], show_hidden=show_hidden )
+    tags = import_tags( settings, filter_names=[util.xstr(name)], show_invisible=show_invisible )
     if len(tags) == 1:
         return tags[0]
 
@@ -32,7 +32,7 @@ def find_tag_by_name( settings, name, show_hidden=False ):
         return None
 
     # Slower, pulling in all tags and picking by index after sorting
-    tags = import_tags( settings, show_hidden=show_hidden )
+    tags = import_tags( settings, show_invisible=show_invisible )
     if idx < len(tags):
         return tags[idx]
 
@@ -40,7 +40,7 @@ def find_tag_by_name( settings, name, show_hidden=False ):
 
 
 # Parse all tags
-def import_tags( settings, filter_names=None, show_hidden=False ):
+def import_tags( settings, filter_names=None, show_invisible=False ):
     tags = []
 
     # Read in all the tags
@@ -52,10 +52,10 @@ def import_tags( settings, filter_names=None, show_hidden=False ):
 
         with open(file) as handle:
             if (tag := parse_tag( settings, handle, name )) is not None:
-                if show_hidden or not tag.hidden:
+                if show_invisible or not tag.invisible:
                     tags.append( tag )
 
-    return sorted( tags, key=lambda x: (x.hidden, x.name.lower()) )
+    return sorted( tags, key=lambda x: (x.invisible, x.name.lower()) )
 
 
 # Export all tags
@@ -86,7 +86,7 @@ def parse_tag( settings, handle, name=None ):
     tag = Tag()
     tag.filename = handle.name
     tag.notes = parser.notes
-    tag.hidden = util.xbool(parser.variables.get('hidden'))
+    tag.invisible = util.xbool(parser.variables.get('invisible'))
 
     # Store the name
     tag.name = name
@@ -112,11 +112,11 @@ def export_tag( settings, handle, tag, include_name=False ):
         handle.write(f'# {tag.name.capitalize()}\n\n')
 
     # Write my modifiers
-    if tag.hidden is not None or include_name:
+    if tag.invisible is not None or include_name:
         if include_name:
             handle.write(f'> #{tag.name}\n')
-        if tag.hidden is not None:
-            handle.write(f'> $hidden={"true" if tag.hidden else "false"}\n')
+        if tag.invisible is not None:
+            handle.write(f'> $invisible={"true" if tag.invisible else "false"}\n')
         handle.write('\n')
 
     # Write out the user's notes

@@ -1,4 +1,4 @@
 # Closed out Tag
 
-> $hidden=true
+> $invisible=true
 

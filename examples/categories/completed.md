@@ -1,6 +1,6 @@
 # Completed
 
-> $accepted=false
-> $visible=true
+> $accepted=true
+> $visible=false
 > $parent=testing
 

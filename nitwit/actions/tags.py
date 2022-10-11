@@ -13,7 +13,7 @@ def handle_tag( settings ):
     #usage = "usage: %command [options] arg"
     parser = OptionParser("")
     parser.add_option("-c", "--create", action="store_true", dest="create", help="Create a new item")
-    parser.add_option("-a", "--all", action="store_true", dest="all", help="Edit all the tags at once")
+    parser.add_option("-i", "--invisible", action="store_true", dest="invisible", help="Include invisible tags")
     parser.add_option("-b", "--batch", action="store_true", dest="batch", help="Edit all tags at once")
 
     (options, args) = parser.parse_args()
@@ -25,7 +25,7 @@ def handle_tag( settings ):
 
     # Create a new tag
     if options.create:
-        tag = tags_mod.find_tag_by_name( settings, ' '.join(args), show_hidden=options.all)
+        tag = tags_mod.find_tag_by_name( settings, ' '.join(args), show_invisible=options.invisible)
         if tag is None:
             return process_create( settings, options, args )
         else:
@@ -40,7 +40,7 @@ def handle_tag( settings ):
 
 
 def process_print( settings, options, args ):
-    tags = tags_mod.import_tags( settings, show_hidden=options.all )
+    tags = tags_mod.import_tags( settings, show_invisible=options.invisible )
     if len(tags) <= 0:
         print( "No tags found. Try creating one." )
 
@@ -53,7 +53,7 @@ def process_print( settings, options, args ):
 
 
 def process_batch( settings, options, args ):
-    tags = tags_mod.import_tags(settings, show_hidden=options.all)
+    tags = tags_mod.import_tags(settings, show_invisible=options.invisible)
     if len(tags) <= 0:
         return "No tags found. Try creating one."
 
@@ -151,7 +151,7 @@ def process_create( settings, options, args ):
 def process_edit( settings, options, args, tag=None ):
     if tag is None:
         tag_name = ' '.join(args)
-        tag = tags_mod.find_tag_by_name( settings, tag_name, show_hidden=options.all )
+        tag = tags_mod.find_tag_by_name( settings, tag_name, show_invisible=options.invisible )
         if tag is None:
             print(f"Couldn't find tag by: {tag_name}")
             return None
@@ -159,7 +159,7 @@ def process_edit( settings, options, args, tag=None ):
     util.editFile( tag.filename )
 
     # Re-export
-    if (new_tag := tags_mod.find_tag_by_name( settings, tag.name, show_hidden=True )) is None:
+    if (new_tag := tags_mod.find_tag_by_name( settings, tag.name, show_invisible=True )) is None:
         return None
 
     tags_mod.export_tags( settings, [new_tag] )

@@ -113,7 +113,7 @@ def handle_prepare_commit( settings, filename ):
 
 
 def write_ticket_line( handle, ticket ):
-    handle.write(f'# %{util.xstr(ticket.uid)}  {util.xstr(ticket.title)[:48]}\n')
+    handle.write(f'# :{util.xstr(ticket.uid)}  {util.xstr(ticket.title)[:48]}\n')
 
 
 def process_msg_file( filename ):

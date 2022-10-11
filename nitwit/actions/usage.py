@@ -29,16 +29,16 @@ Ticket usage:
 def detail_tag():
     print('''
 Tag usage:
-    nw tag [-c | -a | -b] [--create | --all | --batch] <tagname>
+    nw tag [-c | -i | -b] [--create | --invisible | --batch] <tagname>
 
 DESCRIPTION
     View / edit / create/ delete tags.
     
-    Empty           Display all currently active tags
-    -a | --all      All tags vs ignoring hidden
-    -c | --create   Creates a new tag by the given name
-    -b | --batch    Batch all tags vs just hidden
-    <tagname>       Edit a single tag
+    Empty               Display all currently active tags
+    -i | --invisible    Include invisible tags
+    -c | --create       Creates a new tag by the given name
+    -b | --batch        Batch edit all tags
+    <tagname>           Edit a single tag
 ''')
 
 

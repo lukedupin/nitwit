@@ -1,4 +1,4 @@
 # Feature
 
-> $hidden=false
+> $invisible=false
 

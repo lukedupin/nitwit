@@ -20,11 +20,12 @@ class List:
 
 ### Bulk commands for parsing and writing to the filesystem
 
-def find_lst_by_name( settings, name ):
-    owners = [settings['username']]
-
+def find_lst_by_name( settings, name, filter_owners=None, active=True):
     # Fastest, look for a specific one
-    lists = import_lists( settings, filter_names=[util.xstr(name)], filter_owners=owners )
+    lists = import_lists( settings,
+                          filter_names=[util.xstr(name)],
+                          filter_owners=filter_owners,
+                          active=active )
     if len(lists) == 1:
         return lists[0]
 
@@ -34,7 +35,7 @@ def find_lst_by_name( settings, name ):
         return None
 
     # Slower, pulling in all tags and picking by index after sorting
-    lists = import_lists( settings )
+    lists = import_lists( settings, filter_owners=filter_owners, active=active )
     if idx < len(lists):
         return lists[idx]
 
@@ -57,12 +58,15 @@ def import_lists( settings, filter_owners=None, filter_names=None, active=True )
             if filter_owners is not None and owner not in filter_owners:
                 continue
 
-            if (lst := parse_list( settings, handle, name, owner )) is not None:
-                if active is not None and util.xbool(lst.active) != active:
-                    continue
-                lists.append( lst )
+            if (lst := parse_list( settings, handle, name, owner )) is None:
+                continue
 
-    return lists
+            if active is not None and util.xbool(lst.active) != active:
+                continue
+
+            lists.append( lst )
+
+    return sorted( lists, key=lambda x: (not x.active, x.name) )
 
 
 # Export all lists

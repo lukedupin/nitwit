@@ -1,6 +1,6 @@
 # Crash
 
-> $hidden=false
+> $invisible=false
 
 For real
 

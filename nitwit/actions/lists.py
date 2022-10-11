@@ -16,7 +16,7 @@ def handle_list( settings ):
     #usage = "usage: %command [options] arg"
     parser = OptionParser("")
     parser.add_option("-c", "--create", action="store_true", dest="create", help="Create a new item")
-    parser.add_option("-a", "--active", action="store_true", dest="active", help="Show all lists, not just active ones")
+    parser.add_option("-i", "--inactive", action="store_true", dest="inactive", help="Show all lists, not just active ones")
     parser.add_option("-e", "--everyone", action="store_true", dest="everyone", help="Show all lists, not just lists you're on")
 
     (options, args) = parser.parse_args()
@@ -36,10 +36,10 @@ def handle_list( settings ):
 
 def process_print( settings, options, args ):
     owners = [settings['username']] if not options.everyone else None
-    active = True if not options.active else None
+    active = True if not options.inactive else None
     lists = lists_mod.import_lists( settings, filter_owners=owners, active=active )
     if len(lists) <= 0:
-        print( "No lists found. Try creating one." )
+        return "No lists found. Try creating one."
 
     # Dump the lists to the screen
     print("Lists")
@@ -50,7 +50,7 @@ def process_print( settings, options, args ):
 
 
 def process_batch( settings, options, args ):
-    lists = lists_mod.import_lists(settings, show_hidden=options.all)
+    lists = lists_mod.import_lists(settings, show_invisible=options.all)
     if len(lists) <= 0:
         return "No lists found. Try creating one."
 
@@ -103,7 +103,9 @@ def process_batch( settings, options, args ):
 
 def process_create( settings, options, args ):
     lst_name = ' '.join(args)
-    if (lst := lists_mod.find_lst_by_name(settings, lst_name)) is None:
+    owners = [settings['username']] if not options.everyone else None
+    active = True if not options.inactive else None
+    if (lst := lists_mod.find_lst_by_name(settings, lst_name, filter_owners=owners, active=active)) is None:
         lst = lists_mod.List()
         lst.date = util.timeNow( 6 * 7 * 24 * 3600 * 1000 ).strftime("%02Y-%02m-%02d")
         lst.owner = settings['username']
@@ -118,17 +120,17 @@ def process_create( settings, options, args ):
 
 
     process_edit( settings, options, args, lst )
-    print(f"Created list")
-    return None
+    return f"Created list %{lst.name}"
 
 
 def process_edit( settings, options, args, lst=None ):
     if lst is None:
         lst_name = ' '.join(args)
-        lst = lists_mod.find_lst_by_name( settings, lst_name )
+        owners = [settings['username']] if not options.everyone else None
+        active = True if not options.inactive else None
+        lst = lists_mod.find_lst_by_name( settings, lst_name, filter_owners=owners, active=active)
         if lst is None:
-            print(f"Couldn't find lst by: {lst_name}")
-            return None
+            return f"Couldn't find lst by: {lst_name}"
 
     tickets = tickets_mod.import_tickets( settings )
     categories = categories_mod.import_categories( settings, show_invisible=True )
@@ -166,13 +168,11 @@ def process_edit( settings, options, args, lst=None ):
 
     except FileNotFoundError:
         os.remove(tmp)
-        print("Failed to create lst")
-        return None
+        return "Failed to create list"
 
     # Write out the new lst
     if len(lists) <= 0:
-        print("Failed to edit lst")
-        return None
+        return "Failed to edit list"
 
     lists_mod.export_lists(settings, lists)
     return None
