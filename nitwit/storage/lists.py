@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime
 
 from nitwit.storage.parser import parse_content
+from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 
 
@@ -71,6 +72,8 @@ def import_lists( settings, filter_owners=None, filter_names=None, active=True )
 
 # Export all lists
 def export_lists( settings, lists ):
+    repo = settings_mod.git_repo()
+
     # Setup the base tags
     dir = f'{settings["directory"]}/lists'
     Path(dir).mkdir(parents=True, exist_ok=True)
@@ -81,6 +84,7 @@ def export_lists( settings, lists ):
 
         with open(f"{list_dir}/{lst.owner}.md", 'w') as handle:
             export_list( settings, handle, lst )
+            repo.index.add([handle.name])
 
 
 ### Individual parse/export commands
