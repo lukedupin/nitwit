@@ -8,16 +8,16 @@ from nitwit.helpers import util
 ## Defines the configuration section of the git file
 NAMESPACE = 'nitwit'
 CONF = [
-    ('directory',           'examples', util.xstr),
+    ('directory',           'nitwit', util.xstr),
     ('subscribecategories', 'accepted', lambda x: util.xstr(x).split(',')),
     ('subscribetags',       'bug,crash', lambda x: util.xstr(x).split(',')),
 ]
 CATEGORIES = [
-    ('pending',     False,  True),
-    ('accepted',    True,   True),
-    ('testing',     True,   True),
-    ('completed',   True,  False),
-    ('trash',       False,  False),
+    ('pending',     False,  True,   None),
+    ('accepted',    True,   True,   'pending'),
+    ('testing',     True,   True,   'accepted'),
+    ('completed',   False,  True,   'testing'),
+    ('trash',       False,  False,  None),
 ]
 TAGS = [
     'bug',

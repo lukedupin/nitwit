@@ -13,7 +13,7 @@ class Category:
         self.filename = None
         self.name = None
         self.title = None
-        self.parent = None
+        self.parent = ""
         self.accepted = True
         self.visible = True
         self.notes = []
@@ -45,7 +45,7 @@ def safe_category( settings, category, categories=None ):
 
 def find_category_by_name( settings, name, show_invisible=False ):
     # Fastest, look for a specific one
-    categories = import_categories( settings, filter_names=[util.xstr(name)], show_invisible=show_invisible )
+    categories = import_categories( settings, filter_names=[util.xstr(name)], show_invisible=True )
     if len(categories) == 1:
         return categories[0]
 
@@ -60,6 +60,22 @@ def find_category_by_name( settings, name, show_invisible=False ):
         return categories[idx]
 
     return None
+
+
+def category_parent_chain( parent, categories ):
+    chain = []
+    while parent is not None:
+        next_parent = None
+
+        # Look for a matching parent
+        for cat in categories:
+            if cat.name == parent:
+                next_parent = cat.parent
+                chain.insert( 0, cat )
+                break
+        parent = next_parent
+
+    return chain
 
 
 # Parse all tags
@@ -77,11 +93,29 @@ def import_categories( settings, filter_names=None, show_invisible=False ):
             if (category := parse_category( settings, handle, name )) is not None:
                 if show_invisible or category.visible:
                     categories.append( category )
+    categories = sorted( categories, key=lambda x: x.name.lower() )
 
     # Build the parent chain
+    sorted_cat = []
+    while len(categories) > 0:
+        longest_chain = []
+        for cat in categories:
+            chain = category_parent_chain( cat.name, categories )
+            if len(longest_chain) < len(chain):
+                longest_chain = chain
 
+        if len(longest_chain) <= 0:
+            break
 
-    return categories
+        # Remove matches
+        for idx in reversed(range(len(categories))):
+            if any([categories[idx].name == x.name for x in longest_chain]):
+                del categories[idx]
+
+        # Add the longest chain and continue to the next one
+        sorted_cat += longest_chain
+
+    return sorted_cat
 
 
 # Export all categories
@@ -112,6 +146,7 @@ def parse_category( settings, handle, name=None ):
     category.notes = parser.notes
     category.accepted = util.xbool(parser.variables.get('accepted'))
     category.visible = util.xbool(parser.variables.get('visible'))
+    category.parent = util.xstr(parser.variables.get('parent'))
 
     # Store the name
     category.name = name

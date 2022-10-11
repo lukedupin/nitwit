@@ -42,7 +42,7 @@ def handle_category( settings ):
 
 
 def process_print( settings, options, args ):
-    categories = categories_mod.import_categories( settings, show_invisible=True )
+    categories = categories_mod.import_categories( settings, show_invisible=options.invisible )
     if len(categories) <= 0:
         print( "No categories found. Try creating one." )
 
@@ -55,7 +55,7 @@ def process_print( settings, options, args ):
 
 
 def process_batch( settings, options, args ):
-    categories = categories_mod.import_categories(settings, show_invisible=True )
+    categories = categories_mod.import_categories(settings, show_invisible=options.invisible )
     if len(categories) <= 0:
         return "No categories found. Try creating one."
 
@@ -153,7 +153,7 @@ def process_create( settings, options, args ):
 def process_edit( settings, options, args, category=None ):
     if category is None:
         category_name = ' '.join(args)
-        category = categories_mod.find_category_by_name( settings, category_name, show_invisible=True )
+        category = categories_mod.find_category_by_name( settings, category_name, show_invisible=options.invisible )
         if category is None:
             print(f"Couldn't find category by: {category_name}")
             return None
@@ -161,7 +161,7 @@ def process_edit( settings, options, args, category=None ):
     util.editFile( category.filename )
 
     # Re-export
-    if (new_cat := categories_mod.find_category_by_name( settings, category.name, show_invisible=True )) is None:
+    if (new_cat := categories_mod.find_category_by_name( settings, category.name, show_invisible=options.invisible )) is None:
         return None
 
     categories_mod.export_categories( settings, [new_cat] )

@@ -32,11 +32,12 @@ def handle_init( settings ):
 
     # Setup the default categories
     cats = []
-    for name, accepted, visible in settings_mod.CATEGORIES:
+    for name, accepted, visible, parent in settings_mod.CATEGORIES:
         cat = categories.Category()
         cat.name = name
         cat.accepted = accepted
         cat.visible = visible
+        cat.parent = parent
         cats.append( cat )
 
     # Setup the default categories
