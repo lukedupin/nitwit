@@ -13,6 +13,7 @@ class Category:
         self.filename = None
         self.name = None
         self.title = None
+        self.parent = None
         self.accepted = True
         self.visible = True
         self.notes = []
@@ -77,6 +78,9 @@ def import_categories( settings, filter_names=None, show_invisible=False ):
                 if show_invisible or category.visible:
                     categories.append( category )
 
+    # Build the parent chain
+
+
     return categories
 
 
@@ -133,13 +137,16 @@ def export_category( settings, handle, category, include_name=False ):
         handle.write(f'# {category.name.capitalize()}\n\n')
 
     # Write my modifiers
-    if category.accepted is not None or category.visible is not None or include_name:
-        if include_name:
-            handle.write(f'> ^{category.name}\n')
-        if category.accepted is not None:
-            handle.write(f'> $accepted={"true" if category.accepted else "false"}\n')
-        if category.visible is not None:
-            handle.write(f'> $visible={"true" if category.visible else "false"}\n')
+    new_line = None
+    if include_name:
+        new_line = handle.write(f'> ^{category.name}\n')
+    if category.accepted is not None:
+        new_line = handle.write(f'> $accepted={"true" if category.accepted else "false"}\n')
+    if category.visible is not None:
+        new_line = handle.write(f'> $visible={"true" if category.visible else "false"}\n')
+    if category.parent is not None:
+        new_line = handle.write(f'> $parent={category.parent}\n')
+    if new_line is not None:
         handle.write('\n')
 
     # Write out the user's notes
