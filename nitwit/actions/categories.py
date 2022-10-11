@@ -42,7 +42,7 @@ def handle_category( settings ):
 
 
 def process_print( settings, options, args ):
-    categories = categories_mod.import_categories( settings, show_invisible=options.invisible )
+    categories = categories_mod.import_categories( settings, show_accepted=True, show_invisible=options.invisible )
     if len(categories) <= 0:
         print( "No categories found. Try creating one." )
 
@@ -55,7 +55,7 @@ def process_print( settings, options, args ):
 
 
 def process_batch( settings, options, args ):
-    categories = categories_mod.import_categories(settings, show_invisible=options.invisible )
+    categories = categories_mod.import_categories(settings, show_accepted=True, show_invisible=options.invisible )
     if len(categories) <= 0:
         return "No categories found. Try creating one."
 

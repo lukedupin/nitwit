@@ -2,7 +2,7 @@ from optparse import OptionParser
 
 from git import GitCommandError
 
-from nitwit.actions import bulk
+from nitwit.storage.parser import write_category_tickets
 from nitwit.storage import lists as lists_mod
 from nitwit.storage import tickets as tickets_mod
 from nitwit.storage import categories as categories_mod
@@ -144,9 +144,10 @@ def process_edit( settings, options, args, lst=None ):
 
         handle.write("\n###### Tickets ######\n\n")
 
-        bulk.write_category_tickets(handle, categories, [x for x in tickets if x.uid not in list_ticket_uids],
-                                    show_invisible=False,
-                                    include_empty=False)
+        write_category_tickets(handle, categories,
+                               [x for x in tickets if x.uid not in list_ticket_uids],
+                               show_invisible=False,
+                               include_empty=False)
 
     # Start the editor
     util.editFile(tmp)

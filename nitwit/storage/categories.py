@@ -79,7 +79,7 @@ def category_parent_chain( parent, categories ):
 
 
 # Parse all tags
-def import_categories( settings, filter_names=None, show_invisible=False ):
+def import_categories( settings, filter_names=None, show_accepted=False, show_invisible=False ):
     categories = []
 
     # Read in all the categories
@@ -91,7 +91,8 @@ def import_categories( settings, filter_names=None, show_invisible=False ):
 
         with open(file) as handle:
             if (category := parse_category( settings, handle, name )) is not None:
-                if show_invisible or category.visible:
+                if show_invisible or category.visible or \
+                   show_accepted and category.accepted:
                     categories.append( category )
     categories = sorted( categories, key=lambda x: x.name.lower() )
 

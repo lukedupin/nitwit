@@ -16,7 +16,7 @@ CATEGORIES = [
     ('pending',     False,  True,   None),
     ('accepted',    True,   True,   'pending'),
     ('testing',     True,   True,   'accepted'),
-    ('completed',   False,  True,   'testing'),
+    ('completed',   True,   False,  'testing'),
     ('trash',       False,  False,  None),
 ]
 TAGS = [
