@@ -3,6 +3,7 @@ from nitwit.helpers import settings as settings_mod
 from nitwit.helpers import util
 from nitwit import hooks
 
+from pathlib import Path
 import random, os, git, configparser, shutil, re
 
 
@@ -18,7 +19,14 @@ def handle_init( settings ):
         if option == 'directory':
             directory = default
         cw.set_value(settings_mod.NAMESPACE, option, default)
+
+    if directory is None:
+        return "Couldn't find base directory in config"
+
     cw.release()
+
+    # Create the directory
+    Path(f"{dir}/{directory}").mkdir(parents=True, exist_ok=True)
 
     # Write out the global
     config = configparser.ConfigParser()
