@@ -4,7 +4,7 @@ from nitwit.helpers import util
 from nitwit import hooks
 
 from pathlib import Path
-import random, os, git, configparser, shutil, re
+import random, os, configparser, shutil, re
 
 
 def handle_init( settings ):
@@ -14,7 +14,8 @@ def handle_init( settings ):
     directory = None
 
     # Write out the config values
-    cw = git.Repo(dir).config_writer()
+    repo = settings_mod.git_repo()
+    cw = repo.config_writer()
     for option, default, func in settings_mod.CONF:
         if option == 'directory':
             directory = default
@@ -31,8 +32,10 @@ def handle_init( settings ):
     # Write out the global
     config = configparser.ConfigParser()
     config['DEFAULT'] = {k: v for k, v, _ in settings_mod.GLOBAL_CONF}
-    with open(f'{dir}/{directory}/config', "w") as handle:
+    config_filename = f'{dir}/{directory}/config'
+    with open(config_filename, "w") as handle:
         config.write( handle )
+    repo.index.add([config_filename])
 
     # Now we can pull our settings_mod and it should have valid data
     if (conf := settings_mod.load_settings()) is None:
